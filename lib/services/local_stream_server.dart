@@ -119,7 +119,7 @@ class LocalStreamServer {
       final dio = Dio(
         BaseOptions(
           headers: {
-            'User-Agent': 'IPTVExpert/1.0.0 (Darwin; Apple Silicon)',
+            'User-Agent': 'IPTVPlay/1.0.0 (Darwin; Apple Silicon)',
             'Accept': '*/*',
           },
           responseType: ResponseType.stream,
@@ -163,7 +163,7 @@ class LocalStreamServer {
 <html>
 <head>
   <meta charset="utf-8">
-  <title>IPTV Expert LAN Stream</title>
+  <title>IPTV Play LAN Stream</title>
   <style>
     body { font-family: -apple-system, sans-serif; background: #0f172a; color: #f8fafc; padding: 40px; text-align: center; }
     h1 { color: #00e5ff; }

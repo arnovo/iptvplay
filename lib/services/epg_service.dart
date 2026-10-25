@@ -11,7 +11,7 @@ class EpgService {
       connectTimeout: const Duration(seconds: 20),
       receiveTimeout: const Duration(seconds: 40),
       headers: {
-        'User-Agent': 'IPTVExpert/1.0.0 (Darwin; Apple Silicon)',
+        'User-Agent': 'IPTVPlay/1.0.0 (Darwin; Apple Silicon)',
       },
       responseType: ResponseType.bytes,
     ),

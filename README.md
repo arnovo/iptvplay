@@ -1,6 +1,6 @@
-# IPTV Expert
+# IPTV Play
 
-**IPTV Expert** es una aplicación multiplataforma moderna, de alto rendimiento y rica en características para la reproducción y gestión de contenido IPTV (TV en Vivo, Películas VOD y Series), desarrollada en **Flutter** con el motor multimedia **MediaKit** (libmpv).
+**IPTV Play** es una aplicación multiplataforma moderna, de alto rendimiento y rica en características para la reproducción y gestión de contenido IPTV (TV en Vivo, Películas VOD y Series), desarrollada en **Flutter** con el motor multimedia **MediaKit** (libmpv).
 
 ---
 

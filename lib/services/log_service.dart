@@ -42,7 +42,7 @@ class LogService {
     log(
       level: LogLevel.info,
       category: LogCategory.system,
-      message: 'IPTV Expert iniciado',
+      message: 'IPTV Play iniciado',
       details: 'OS: ${Platform.operatingSystem} (${Platform.version})',
     );
   }
@@ -112,7 +112,7 @@ class LogService {
 
   String exportFormattedText() {
     final buffer = StringBuffer();
-    buffer.writeln('=== REGISTROS DE SISTEMA IPTV EXPERT ===');
+    buffer.writeln('=== REGISTROS DE SISTEMA IPTV PLAY ===');
     buffer.writeln('Fecha de exportación: ${DateTime.now().toIso8601String()}');
     buffer.writeln('Total de registros: ${_logs.length}\n');
 

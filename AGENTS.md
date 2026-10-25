@@ -1,6 +1,6 @@
 # Guía de Desarrollo para Agentes de IA (AGENTS.md)
 
-Este documento define la arquitectura, convenciones, patrones de diseño y estándares de calidad que **todo agente de IA debe respetar** al trabajar en el código de **IPTV Expert**.
+Este documento define la arquitectura, convenciones, patrones de diseño y estándares de calidad que **todo agente de IA debe respetar** al trabajar en el código de **IPTV Play**.
 
 ---
 

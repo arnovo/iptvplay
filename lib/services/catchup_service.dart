@@ -8,7 +8,7 @@ class CatchupService {
     BaseOptions(
       connectTimeout: const Duration(seconds: 15),
       headers: {
-        'User-Agent': 'IPTVExpert/1.0.0 (Darwin; Apple Silicon)',
+        'User-Agent': 'IPTVPlay/1.0.0 (Darwin; Apple Silicon)',
       },
     ),
   );

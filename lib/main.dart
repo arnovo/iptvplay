@@ -44,7 +44,7 @@ class IptvApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'IPTV Expert',
+      title: 'IPTV Play',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       home: const HomeShellScreen(),

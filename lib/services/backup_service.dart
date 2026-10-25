@@ -30,7 +30,7 @@ class BackupData {
 
   Map<String, dynamic> toJson() => {
         'version': version,
-        'app': 'IPTV Expert Clone',
+        'app': 'IPTV Play',
         'exportedAt': exportedAt.toIso8601String(),
         'profiles': profiles.map((p) => p.toJson()).toList(),
         'activeProfileId': activeProfileId,

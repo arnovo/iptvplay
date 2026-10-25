@@ -97,11 +97,11 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'IPTV Expert',
+                            'IPTV Play',
                             style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
                           ),
                           Text(
-                            'Player Clone',
+                            'Smart Player',
                             style: TextStyle(color: AppTheme.primary, fontSize: 11, fontWeight: FontWeight.bold),
                           ),
                         ],
@@ -330,7 +330,7 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
             ),
             const SizedBox(height: 20),
             const Text(
-              '¡Bienvenido a IPTV Expert!',
+              '¡Bienvenido a IPTV Play!',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
