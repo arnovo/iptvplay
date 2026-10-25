@@ -11,6 +11,8 @@ class StreamServerProvider extends ChangeNotifier {
   String? get streamUrl => _server.streamUrl;
   String? get webPlayerUrl => _server.webPlayerUrl;
   String? get rawStreamUrl => _server.rawStreamUrl;
+  String? get localStreamUrl => _server.localStreamUrl;
+  String? get targetStreamUrl => _server.targetStreamUrl;
   String? get targetTitle => _server.targetTitle;
   int get clientCount => _clientCount;
   String? get localIp => _server.localIp;

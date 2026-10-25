@@ -67,6 +67,37 @@ class _PlayerScreenState extends State<PlayerScreen> {
   // Fullscreen state
   bool _isFullScreen = false;
 
+  // Stream loopback tracking
+  String? _currentPlayingUrl;
+  StreamServerProvider? _streamServerProvider;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final provider = context.read<StreamServerProvider>();
+    if (_streamServerProvider != provider) {
+      _streamServerProvider?.removeListener(_onServerStateChanged);
+      _streamServerProvider = provider;
+      _streamServerProvider?.addListener(_onServerStateChanged);
+    }
+  }
+
+  void _onServerStateChanged() {
+    final provider = _streamServerProvider;
+    if (provider == null || !mounted) return;
+
+    if (provider.isRunning && provider.targetStreamUrl == widget.streamUrl) {
+      final localUrl = provider.localStreamUrl;
+      if (localUrl != null && _currentPlayingUrl != localUrl) {
+        _currentPlayingUrl = localUrl;
+        _player.open(Media(localUrl));
+      }
+    } else if (!provider.isRunning && _currentPlayingUrl != widget.streamUrl) {
+      _currentPlayingUrl = widget.streamUrl;
+      _player.open(Media(widget.streamUrl));
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -123,6 +154,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
         }
       });
 
+      _currentPlayingUrl = widget.streamUrl;
       await _player.open(Media(widget.streamUrl));
 
       // Auto-resume if position was passed
@@ -461,6 +493,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   @override
   void dispose() {
+    _streamServerProvider?.removeListener(_onServerStateChanged);
     _saveCurrentProgress();
     if (_isFullScreen) {
       if (!kIsWeb && (Platform.isMacOS || Platform.isWindows || Platform.isLinux)) {

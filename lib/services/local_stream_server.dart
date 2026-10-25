@@ -46,6 +46,14 @@ class LocalStreamServer {
     return 'http://$_localIp:$_port/stream.$ext';
   }
 
+  /// Localhost stream URL for local player loopback
+  String? get localStreamUrl {
+    if (_server == null) return null;
+    final isM3u8 = _targetStreamUrl?.contains('.m3u8') ?? false;
+    final ext = isM3u8 ? 'm3u8' : 'ts';
+    return 'http://127.0.0.1:$_port/stream.$ext';
+  }
+
   /// Default stream URL (points to web player for browser compatibility)
   String? get streamUrl => webPlayerUrl;
 
