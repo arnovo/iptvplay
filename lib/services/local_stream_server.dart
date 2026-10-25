@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:dio/dio.dart';
 import 'log_service.dart';
 import '../models/app_log.dart';
 
@@ -14,7 +13,14 @@ class LocalStreamServer {
   String? _targetTitle;
   int _port = 8088;
   String? _localIp;
-  int _activeClients = 0;
+
+  // Upstream single-connection multiplexer
+  HttpClient? _upstreamClient;
+  StreamSubscription<List<int>>? _upstreamSub;
+  final Set<HttpResponse> _clients = {};
+  final List<List<int>> _recentChunks = [];
+  int _recentBytes = 0;
+  static const int _maxRecentBytes = 512 * 1024; // 512 KB burst buffer for instant player start
 
   final StreamController<int> _clientsController = StreamController<int>.broadcast();
   Stream<int> get activeClientsStream => _clientsController.stream;
@@ -24,7 +30,7 @@ class LocalStreamServer {
   String? get targetTitle => _targetTitle;
   int get port => _port;
   String? get localIp => _localIp;
-  int get activeClients => _activeClients;
+  int get activeClients => _clients.length;
 
   /// Web Player URL (HTML5 player with embedded mpegts.js and hls.js)
   String? get webPlayerUrl {
@@ -118,7 +124,7 @@ class LocalStreamServer {
   void _handleHttpRequest(HttpRequest request) async {
     // Add CORS headers for web browsers and Smart TVs
     request.response.headers.set('Access-Control-Allow-Origin', '*');
-    request.response.headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    request.response.headers.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
     request.response.headers.set('Access-Control-Allow-Headers', '*');
 
     if (request.method == 'OPTIONS') {
@@ -136,27 +142,38 @@ class LocalStreamServer {
       return;
     }
 
+    final userAgent = request.headers.value('user-agent')?.toLowerCase() ?? '';
     final acceptHeader = request.headers.value('accept')?.toLowerCase() ?? '';
-    final isBrowserRequest = acceptHeader.contains('text/html') ||
-        acceptHeader.contains('application/xhtml+xml');
 
-    // Route to Web Player if client is a browser or accessing player routes
-    if (path == '/' ||
-        path == '/player' ||
-        path == '/watch' ||
-        (isBrowserRequest && (path == '/stream' || path.isEmpty))) {
+    // Detect media players (VLC for iOS/Mac, Kodi, ExoPlayer, Smart TV, Infuse)
+    final isMediaPlayer = userAgent.contains('vlc') ||
+        userAgent.contains('kodi') ||
+        userAgent.contains('exoplayer') ||
+        userAgent.contains('lavf') ||
+        userAgent.contains('smart') ||
+        userAgent.contains('tivimate') ||
+        userAgent.contains('infuse') ||
+        userAgent.contains('applecoremedia');
+
+    final isBrowser = (acceptHeader.contains('text/html') ||
+            acceptHeader.contains('application/xhtml+xml')) &&
+        !isMediaPlayer;
+
+    // If client is a web browser requesting web player
+    if (isBrowser && (path == '/' || path == '/player' || path == '/watch' || path == '/stream' || path.isEmpty)) {
       await _serveWebPlayer(request);
       return;
     }
 
-    // Media stream endpoints for VLC, Smart TV, or in-browser MSE video tags
+    // Media stream endpoints for VLC, Smart TV, or in-browser video tags
     if (path == '/stream' ||
         path == '/stream.ts' ||
         path == '/stream.m3u8' ||
         path == '/live' ||
         path == '/raw' ||
-        path == '/video.ts') {
-      await _serveMediaStream(request);
+        path == '/video.ts' ||
+        (isMediaPlayer && (path == '/' || path.isEmpty))) {
+      await _handleMediaRequest(request);
       return;
     }
 
@@ -164,6 +181,177 @@ class LocalStreamServer {
     request.response.statusCode = HttpStatus.notFound;
     request.response.write('Ruta no encontrada');
     await request.response.close();
+  }
+
+  /// Handles media requests (both HEAD and GET) with multiplexed broadcasting
+  Future<void> _handleMediaRequest(HttpRequest request) async {
+    if (_targetStreamUrl == null || _targetStreamUrl!.isEmpty) {
+      request.response.statusCode = HttpStatus.notFound;
+      request.response.write('No hay flujo activo para reenviar.');
+      await request.response.close();
+      return;
+    }
+
+    final isM3u8 = _targetStreamUrl!.contains('.m3u8');
+    final contentType = isM3u8 ? 'application/x-mpegURL' : 'video/mp2t';
+    final filename = isM3u8 ? 'stream.m3u8' : 'stream.ts';
+
+    // Handle HEAD request (required by VLC on iOS)
+    if (request.method == 'HEAD') {
+      request.response.statusCode = HttpStatus.ok;
+      request.response.headers.set('Content-Type', contentType);
+      request.response.headers.set('Content-Disposition', 'inline; filename="$filename"');
+      request.response.headers.set('Accept-Ranges', 'none');
+      request.response.headers.set('Connection', 'keep-alive');
+      request.response.headers.set('Access-Control-Allow-Origin', '*');
+      await request.response.close();
+      return;
+    }
+
+    // Handle GET streaming request
+    final clientIp = request.connectionInfo?.remoteAddress.address ?? 'cliente';
+    request.response.statusCode = HttpStatus.ok;
+    request.response.headers.set('Content-Type', contentType);
+    request.response.headers.set('Content-Disposition', 'inline; filename="$filename"');
+    request.response.headers.set('Connection', 'keep-alive');
+    request.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    request.response.headers.set('Pragma', 'no-cache');
+    request.response.headers.set('Accept-Ranges', 'none');
+    request.response.headers.set('Access-Control-Allow-Origin', '*');
+    request.response.bufferOutput = false;
+
+    // Start single upstream connection if not already running
+    if (_upstreamSub == null) {
+      await _startUpstream();
+    }
+
+    // Register client
+    _clients.add(request.response);
+    _clientsController.add(_clients.length);
+
+    LogService.instance.info(
+      LogCategory.server,
+      'Cliente conectado al stream LAN ($clientIp). Clientes activos: ${_clients.length}',
+    );
+
+    // Send recent PAT/PMT/I-frame burst buffer for instant tune-in
+    try {
+      for (final chunk in _recentChunks) {
+        request.response.add(chunk);
+      }
+      await request.response.flush();
+    } catch (_) {
+      _removeClient(request.response, clientIp);
+      return;
+    }
+
+    // Handle client disconnect
+    request.response.done.then((_) {
+      _removeClient(request.response, clientIp);
+    }).catchError((_) {
+      _removeClient(request.response, clientIp);
+    });
+  }
+
+  void _removeClient(HttpResponse response, String clientIp) {
+    if (_clients.remove(response)) {
+      _clientsController.add(_clients.length);
+      LogService.instance.info(
+        LogCategory.server,
+        'Cliente desconectado del stream LAN ($clientIp). Clientes activos: ${_clients.length}',
+      );
+      if (_clients.isEmpty) {
+        _stopUpstream();
+      }
+    }
+  }
+
+  /// Starts single upstream connection to IPTV provider
+  Future<void> _startUpstream() async {
+    if (_targetStreamUrl == null || _targetStreamUrl!.isEmpty) return;
+
+    _stopUpstream();
+
+    try {
+      _upstreamClient = HttpClient();
+      _upstreamClient!.findProxy = null;
+      _upstreamClient!.badCertificateCallback = (cert, host, port) => true;
+
+      final req = await _upstreamClient!.getUrl(Uri.parse(_targetStreamUrl!));
+      req.headers.set('User-Agent', 'IPTVSmartersPro/3.1.5.1 (Linux; Android 12) AppleWebKit/537.36');
+      req.headers.set('Accept', '*/*');
+      req.followRedirects = true;
+      req.maxRedirects = 5;
+
+      final resp = await req.close();
+      if (resp.statusCode != HttpStatus.ok) {
+        LogService.instance.error(
+          LogCategory.server,
+          'Error del servidor IPTV upstream: HTTP ${resp.statusCode}',
+        );
+        _stopUpstream();
+        return;
+      }
+
+      _upstreamSub = resp.listen(
+        (chunk) {
+          // Store in burst buffer
+          _recentChunks.add(chunk);
+          _recentBytes += chunk.length;
+          while (_recentBytes > _maxRecentBytes && _recentChunks.isNotEmpty) {
+            _recentBytes -= _recentChunks.removeAt(0).length;
+          }
+
+          // Broadcast to all active clients
+          final toRemove = <HttpResponse>[];
+          for (final client in _clients) {
+            try {
+              client.add(chunk);
+            } catch (_) {
+              toRemove.add(client);
+            }
+          }
+
+          for (final c in toRemove) {
+            _clients.remove(c);
+            try { c.close(); } catch (_) {}
+          }
+          if (toRemove.isNotEmpty) {
+            _clientsController.add(_clients.length);
+            if (_clients.isEmpty) {
+              _stopUpstream();
+            }
+          }
+        },
+        onError: (err) {
+          LogService.instance.warning(
+            LogCategory.server,
+            'Flujo upstream interrumpido: $err',
+          );
+          _stopUpstream();
+        },
+        onDone: () {
+          _stopUpstream();
+        },
+        cancelOnError: true,
+      );
+    } catch (e) {
+      LogService.instance.error(
+        LogCategory.server,
+        'Fallo al iniciar conexión upstream con servidor IPTV',
+        details: e.toString(),
+      );
+      _stopUpstream();
+    }
+  }
+
+  void _stopUpstream() {
+    _upstreamSub?.cancel();
+    _upstreamSub = null;
+    _upstreamClient?.close(force: true);
+    _upstreamClient = null;
+    _recentChunks.clear();
+    _recentBytes = 0;
   }
 
   /// Serves the HTML5 Web Player with mpegts.js & hls.js
@@ -510,7 +698,7 @@ class LocalStreamServer {
 
       <ul class="steps-list" style="margin-top: 18px;">
         <li><span class="step-num">1</span> Asegúrate de que el otro dispositivo esté conectado a la misma red Wi-Fi o cableada.</li>
-        <li><span class="step-num">2</span> Para Smart TVs: abre VLC ("Abrir red"), TiviMate, SS IPTV o tu app IPTV preferida y pega el enlace directo.</li>
+        <li><span class="step-num">2</span> Para Smart TVs y VLC: abre VLC ("Flujo de red" o "Abrir red") y pega el enlace directo.</li>
       </ul>
     </div>
   </div>
@@ -557,11 +745,11 @@ class LocalStreamServer {
         }
       }
 
-      // MPEG-TS Playback via mpegts.js
+      // MPEG-TS Playback via mpegts.js (type: 'm2ts')
       if (typeof mpegts !== 'undefined' && mpegts.getFeatureList().mseLivePlayback) {
         try {
           mpegPlayer = mpegts.createPlayer({
-            type: 'mse',
+            type: 'm2ts',
             isLive: true,
             url: streamUrl
           }, {
@@ -651,74 +839,14 @@ class LocalStreamServer {
     await request.response.close();
   }
 
-  /// Serves the continuous raw media stream (MPEG-TS or HLS)
-  Future<void> _serveMediaStream(HttpRequest request) async {
-    if (_targetStreamUrl == null || _targetStreamUrl!.isEmpty) {
-      request.response.statusCode = HttpStatus.notFound;
-      request.response.write('No hay flujo activo para reenviar.');
-      await request.response.close();
-      return;
-    }
-
-    _activeClients++;
-    _clientsController.add(_activeClients);
-
-    final clientIp = request.connectionInfo?.remoteAddress.address ?? 'cliente';
-    LogService.instance.info(
-      LogCategory.server,
-      'Cliente conectado al stream LAN ($clientIp). Clientes activos: $_activeClients',
-    );
-
-    final dio = Dio(
-      BaseOptions(
-        headers: {
-          'User-Agent': 'IPTVPlay/1.0.0 (Darwin; Apple Silicon)',
-          'Accept': '*/*',
-        },
-        responseType: ResponseType.stream,
-      ),
-    );
-
-    CancelToken? cancelToken = CancelToken();
-
-    try {
-      final isM3u8 = _targetStreamUrl!.contains('.m3u8');
-      final contentType = isM3u8 ? 'application/x-mpegURL' : 'video/mp2t';
-      final filename = isM3u8 ? 'stream.m3u8' : 'stream.ts';
-
-      request.response.headers.set('Content-Type', contentType);
-      request.response.headers.set('Content-Disposition', 'inline; filename="$filename"');
-      request.response.headers.set('Connection', 'keep-alive');
-      request.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-
-      final response = await dio.get<ResponseBody>(
-        _targetStreamUrl!,
-        cancelToken: cancelToken,
-      );
-
-      final stream = response.data?.stream;
-      if (stream != null) {
-        await request.response.addStream(stream);
-      }
-    } catch (_) {
-      // Client disconnected or upstream ended
-    } finally {
-      cancelToken.cancel();
-      try {
-        await request.response.close();
-      } catch (_) {}
-      _activeClients = (_activeClients - 1).clamp(0, 999);
-      _clientsController.add(_activeClients);
-
-      LogService.instance.info(
-        LogCategory.server,
-        'Cliente desconectado del stream LAN ($clientIp). Clientes activos: $_activeClients',
-      );
-    }
-  }
-
   /// Stop local streaming server
   Future<void> stopServer() async {
+    _stopUpstream();
+    for (final client in _clients) {
+      try { client.close(); } catch (_) {}
+    }
+    _clients.clear();
+
     if (_server != null) {
       await _server!.close(force: true);
       _server = null;
@@ -727,7 +855,6 @@ class LocalStreamServer {
         'Servidor de reenvío LAN detenido',
       );
     }
-    _activeClients = 0;
     _clientsController.add(0);
   }
 }
