@@ -9,6 +9,8 @@ import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 import '../../providers/user_activity_provider.dart';
 import '../../providers/download_provider.dart';
+import '../../providers/stream_server_provider.dart';
+import '../widgets/lan_stream_dialog.dart';
 import '../theme/app_theme.dart';
 
 class PlayerScreen extends StatefulWidget {
@@ -782,6 +784,30 @@ class _PlayerScreenState extends State<PlayerScreen> {
                         );
                       },
                     ),
+                  // Cast / LAN Stream Reforward Button
+                  Consumer<StreamServerProvider>(
+                    builder: (context, streamServer, _) {
+                      final isSharing = streamServer.isRunning;
+                      return IconButton(
+                        icon: Icon(
+                          Icons.cell_tower,
+                          color: isSharing ? AppTheme.primary : Colors.white,
+                          size: 22,
+                        ),
+                        tooltip: isSharing ? 'Transmitiendo en red local (Activo)' : 'Reenviar vídeo por URL (Red Local)',
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (_) => LanStreamDialog(
+                              title: widget.title,
+                              streamUrl: widget.streamUrl,
+                            ),
+                          );
+                          _startControlsTimer();
+                        },
+                      );
+                    },
+                  ),
                   // Fullscreen Button
                   IconButton(
                     icon: Icon(

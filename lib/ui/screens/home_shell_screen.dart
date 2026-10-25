@@ -264,33 +264,36 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
         borderRadius: BorderRadius.circular(10),
         border: isSelected ? Border.all(color: AppTheme.primary.withValues(alpha: 0.5)) : null,
       ),
-      child: ListTile(
-        dense: true,
-        leading: Icon(icon, color: isSelected ? AppTheme.primary : AppTheme.textSecondary, size: 20),
-        title: Text(
-          title,
-          style: TextStyle(
-            color: isSelected ? AppTheme.textPrimary : AppTheme.textSecondary,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            fontSize: 13,
-          ),
-        ),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            color: isSelected ? AppTheme.primary.withValues(alpha: 0.15) : AppTheme.surfaceLight,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            badge,
+      child: Material(
+        color: Colors.transparent,
+        child: ListTile(
+          dense: true,
+          leading: Icon(icon, color: isSelected ? AppTheme.primary : AppTheme.textSecondary, size: 20),
+          title: Text(
+            title,
             style: TextStyle(
-              fontSize: 11,
-              color: isSelected ? AppTheme.primary : AppTheme.textMuted,
+              color: isSelected ? AppTheme.textPrimary : AppTheme.textSecondary,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              fontSize: 13,
             ),
           ),
+          trailing: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: isSelected ? AppTheme.primary.withValues(alpha: 0.15) : AppTheme.surfaceLight,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              badge,
+              style: TextStyle(
+                fontSize: 11,
+                color: isSelected ? AppTheme.primary : AppTheme.textMuted,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ),
+          onTap: () => setState(() => _selectedIndex = index),
         ),
-        onTap: () => setState(() => _selectedIndex = index),
       ),
     );
   }
