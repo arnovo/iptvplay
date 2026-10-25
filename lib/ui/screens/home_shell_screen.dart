@@ -1,0 +1,347 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/profile_provider.dart';
+import '../../providers/catalog_provider.dart';
+import '../theme/app_theme.dart';
+import 'live_tv_screen.dart';
+import 'vod_screen.dart';
+import 'series_screen.dart';
+import 'profile_list_screen.dart';
+import 'add_profile_dialog.dart';
+
+class HomeShellScreen extends StatefulWidget {
+  const HomeShellScreen({super.key});
+
+  @override
+  State<HomeShellScreen> createState() => _HomeShellScreenState();
+}
+
+class _HomeShellScreenState extends State<HomeShellScreen> {
+  int _selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initData();
+    });
+  }
+
+  Future<void> _initData() async {
+    final profileProvider = context.read<ProfileProvider>();
+    await profileProvider.loadProfiles();
+    if (mounted && profileProvider.activeProfile != null) {
+      context.read<CatalogProvider>().loadCatalog(profileProvider.activeProfile!);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final profileProvider = context.watch<ProfileProvider>();
+    final catalogProvider = context.watch<CatalogProvider>();
+    final activeProfile = profileProvider.activeProfile;
+
+    return Scaffold(
+      body: Row(
+        children: [
+          // Navigation Rail / Sidebar
+          Container(
+            width: 220,
+            color: AppTheme.surface,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // App Logo
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primary.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppTheme.primary.withValues(alpha: 0.4)),
+                        ),
+                        child: const Icon(Icons.live_tv, color: AppTheme.primary, size: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'IPTV Expert',
+                            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                          ),
+                          Text(
+                            'Player Clone',
+                            style: TextStyle(color: AppTheme.primary, fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Active Profile Card
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const ProfileListScreen()),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceLight,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppTheme.border),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.account_circle, color: AppTheme.primary, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  activeProfile?.name ?? 'Sin lista activa',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  activeProfile != null ? 'Cambiar lista' : 'Toca para añadir',
+                                  style: const TextStyle(color: AppTheme.textMuted, fontSize: 10),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.unfold_more, size: 16, color: AppTheme.textMuted),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+                const Divider(color: AppTheme.border, height: 1),
+                const SizedBox(height: 12),
+
+                // Navigation Tabs
+                _buildNavItem(
+                  icon: Icons.tv,
+                  title: 'TV en Vivo',
+                  badge: '${catalogProvider.content.channels.length}',
+                  index: 0,
+                ),
+                _buildNavItem(
+                  icon: Icons.movie_outlined,
+                  title: 'Películas (VOD)',
+                  badge: '${catalogProvider.content.vods.length}',
+                  index: 1,
+                ),
+                _buildNavItem(
+                  icon: Icons.video_library_outlined,
+                  title: 'Series',
+                  badge: '${catalogProvider.content.series.length}',
+                  index: 2,
+                ),
+
+                const Spacer(),
+
+                // Bottom actions
+                const Divider(color: AppTheme.border, height: 1),
+                if (activeProfile != null)
+                  ListTile(
+                    dense: true,
+                    leading: const Icon(Icons.refresh, color: AppTheme.textSecondary, size: 20),
+                    title: const Text('Recargar lista', style: TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
+                    onTap: catalogProvider.isLoading
+                        ? null
+                        : () => catalogProvider.loadCatalog(activeProfile),
+                  ),
+                ListTile(
+                  dense: true,
+                  leading: const Icon(Icons.playlist_add, color: AppTheme.primary, size: 20),
+                  title: const Text('Añadir lista', style: TextStyle(fontSize: 13, color: AppTheme.primary, fontWeight: FontWeight.bold)),
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (_) => const AddProfileDialog(),
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+              ],
+            ),
+          ),
+
+          const VerticalDivider(width: 1, color: AppTheme.border),
+
+          // Main View Content
+          Expanded(
+            child: _buildBody(activeProfile, catalogProvider),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavItem({
+    required IconData icon,
+    required String title,
+    required String badge,
+    required int index,
+  }) {
+    final isSelected = _selectedIndex == index;
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      decoration: BoxDecoration(
+        color: isSelected ? AppTheme.surfaceLight : Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
+        border: isSelected ? Border.all(color: AppTheme.primary.withValues(alpha: 0.5)) : null,
+      ),
+      child: ListTile(
+        dense: true,
+        leading: Icon(icon, color: isSelected ? AppTheme.primary : AppTheme.textSecondary, size: 20),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: isSelected ? AppTheme.textPrimary : AppTheme.textSecondary,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            fontSize: 13,
+          ),
+        ),
+        trailing: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: isSelected ? AppTheme.primary.withValues(alpha: 0.15) : AppTheme.surfaceLight,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            badge,
+            style: TextStyle(
+              fontSize: 11,
+              color: isSelected ? AppTheme.primary : AppTheme.textMuted,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        ),
+        onTap: () => setState(() => _selectedIndex = index),
+      ),
+    );
+  }
+
+  Widget _buildBody(dynamic activeProfile, CatalogProvider catalogProvider) {
+    if (activeProfile == null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceLight,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
+              ),
+              child: const Icon(Icons.playlist_play, size: 64, color: AppTheme.primary),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              '¡Bienvenido a IPTV Expert!',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Para empezar a ver TV en vivo, películas y series, añade tu primera lista.',
+              style: TextStyle(color: AppTheme.textSecondary),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (_) => const AddProfileDialog(),
+                );
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Añadir Lista o Cuenta Xtream'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (catalogProvider.isLoading) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(color: AppTheme.primary),
+            SizedBox(height: 20),
+            Text(
+              'Cargando canales y catálogo...',
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 15),
+            ),
+            SizedBox(height: 6),
+            Text(
+              'Procesando lista M3U / Servidor Xtream...',
+              style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (catalogProvider.errorMessage != null) {
+      return Center(
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          margin: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: AppTheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppTheme.accentRed.withValues(alpha: 0.5)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, color: AppTheme.accentRed, size: 48),
+              const SizedBox(height: 16),
+              const Text('Error al cargar la lista', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text(
+                catalogProvider.errorMessage!,
+                style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                onPressed: () => catalogProvider.loadCatalog(activeProfile),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Reintentar'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    switch (_selectedIndex) {
+      case 0:
+        return const LiveTvScreen();
+      case 1:
+        return const VodScreen();
+      case 2:
+        return const SeriesScreen();
+      default:
+        return const LiveTvScreen();
+    }
+  }
+}
