@@ -1,5 +1,8 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:window_manager/window_manager.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/catalog_provider.dart';
 import '../theme/app_theme.dart';
@@ -18,13 +21,30 @@ class HomeShellScreen extends StatefulWidget {
 
 class _HomeShellScreenState extends State<HomeShellScreen> {
   int _selectedIndex = 0;
+  bool _isFullScreen = false;
 
   @override
   void initState() {
     super.initState();
+    _checkFullScreen();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initData();
     });
+  }
+
+  Future<void> _checkFullScreen() async {
+    if (!kIsWeb && (Platform.isMacOS || Platform.isWindows || Platform.isLinux)) {
+      final isFull = await windowManager.isFullScreen();
+      if (mounted) setState(() => _isFullScreen = isFull);
+    }
+  }
+
+  Future<void> _toggleFullScreen() async {
+    if (!kIsWeb && (Platform.isMacOS || Platform.isWindows || Platform.isLinux)) {
+      final isFull = await windowManager.isFullScreen();
+      await windowManager.setFullScreen(!isFull);
+      if (mounted) setState(() => _isFullScreen = !isFull);
+    }
   }
 
   Future<void> _initData() async {
@@ -175,6 +195,19 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
                       builder: (_) => const AddProfileDialog(),
                     );
                   },
+                ),
+                ListTile(
+                  dense: true,
+                  leading: Icon(
+                    _isFullScreen ? Icons.fullscreen_exit : Icons.fullscreen,
+                    color: AppTheme.textSecondary,
+                    size: 20,
+                  ),
+                  title: Text(
+                    _isFullScreen ? 'Salir de pantalla completa' : 'Pantalla completa',
+                    style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                  ),
+                  onTap: _toggleFullScreen,
                 ),
                 const SizedBox(height: 12),
               ],

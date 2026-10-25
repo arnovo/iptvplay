@@ -179,14 +179,105 @@ class _PlayerScreenState extends State<PlayerScreen> {
     _startControlsTimer();
   }
 
+  void _showScreenFormatDialog() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.aspect_ratio, color: AppTheme.primary),
+                  SizedBox(width: 10),
+                  Text(
+                    'Formato y Modo de Pantalla',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                dense: true,
+                leading: const Icon(Icons.fullscreen, color: AppTheme.primary),
+                title: const Text('Pantalla completa (Llenar / Zoom)', style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text('Llena toda la pantalla sin bordes negros', style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+                trailing: _aspectRatioFit == BoxFit.cover ? const Icon(Icons.check, color: AppTheme.primary) : null,
+                onTap: () {
+                  setState(() {
+                    _aspectRatioFit = BoxFit.cover;
+                    _aspectRatioName = 'Completa';
+                  });
+                  Navigator.of(ctx).pop();
+                  _startControlsTimer();
+                },
+              ),
+              ListTile(
+                dense: true,
+                leading: const Icon(Icons.fit_screen, color: AppTheme.primary),
+                title: const Text('Ajustar a pantalla (Original)', style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text('Mantiene la proporción nativa del vídeo', style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+                trailing: _aspectRatioFit == BoxFit.contain ? const Icon(Icons.check, color: AppTheme.primary) : null,
+                onTap: () {
+                  setState(() {
+                    _aspectRatioFit = BoxFit.contain;
+                    _aspectRatioName = 'Ajustar';
+                  });
+                  Navigator.of(ctx).pop();
+                  _startControlsTimer();
+                },
+              ),
+              ListTile(
+                dense: true,
+                leading: const Icon(Icons.aspect_ratio, color: AppTheme.primary),
+                title: const Text('Estirar (16:9)', style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text('Escala la imagen a formato panorámico', style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+                trailing: _aspectRatioFit == BoxFit.fill ? const Icon(Icons.check, color: AppTheme.primary) : null,
+                onTap: () {
+                  setState(() {
+                    _aspectRatioFit = BoxFit.fill;
+                    _aspectRatioName = 'Estirar';
+                  });
+                  Navigator.of(ctx).pop();
+                  _startControlsTimer();
+                },
+              ),
+              const Divider(color: AppTheme.border),
+              ListTile(
+                dense: true,
+                leading: Icon(_isFullScreen ? Icons.fullscreen_exit : Icons.fullscreen, color: AppTheme.accentGreen),
+                title: Text(
+                  _isFullScreen ? 'Salir de pantalla completa (Ventana)' : 'Activar pantalla completa (Ventana)',
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.accentGreen),
+                ),
+                subtitle: const Text('Maximiza la ventana ocupando todo tu monitor (o pulsa tecla F)', style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _toggleFullScreen();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _toggleAspectRatio() {
     setState(() {
       if (_aspectRatioFit == BoxFit.contain) {
         _aspectRatioFit = BoxFit.cover;
-        _aspectRatioName = 'Rellenar';
+        _aspectRatioName = 'Completa';
       } else if (_aspectRatioFit == BoxFit.cover) {
         _aspectRatioFit = BoxFit.fill;
-        _aspectRatioName = 'Estirar (16:9)';
+        _aspectRatioName = 'Estirar';
       } else {
         _aspectRatioFit = BoxFit.contain;
         _aspectRatioName = 'Ajustar';
@@ -368,16 +459,64 @@ class _PlayerScreenState extends State<PlayerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: MouseRegion(
-        onHover: (_) {
-          if (!_showControls) {
-            setState(() => _showControls = true);
+      body: Focus(
+        autofocus: true,
+        onKeyEvent: (node, event) {
+          if (event is KeyDownEvent) {
+            if (event.logicalKey == LogicalKeyboardKey.keyF) {
+              _toggleFullScreen();
+              return KeyEventResult.handled;
+            } else if (event.logicalKey == LogicalKeyboardKey.escape) {
+              if (_isFullScreen) {
+                _toggleFullScreen();
+                return KeyEventResult.handled;
+              }
+            } else if (event.logicalKey == LogicalKeyboardKey.space) {
+              _onPlayPauseTap();
+              return KeyEventResult.handled;
+            } else if (event.logicalKey == LogicalKeyboardKey.keyM) {
+              _toggleMute();
+              return KeyEventResult.handled;
+            } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+              final pos = _player.state.position;
+              _player.seek(pos + const Duration(seconds: 10));
+              _startControlsTimer();
+              return KeyEventResult.handled;
+            } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+              final pos = _player.state.position;
+              _player.seek(pos - const Duration(seconds: 10));
+              _startControlsTimer();
+              return KeyEventResult.handled;
+            } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+              setState(() {
+                _volume = (_volume + 5.0).clamp(0.0, 100.0);
+                _isMuted = false;
+                _player.setVolume(_volume);
+              });
+              _startControlsTimer();
+              return KeyEventResult.handled;
+            } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+              setState(() {
+                _volume = (_volume - 5.0).clamp(0.0, 100.0);
+                _isMuted = _volume == 0;
+                _player.setVolume(_volume);
+              });
+              _startControlsTimer();
+              return KeyEventResult.handled;
+            }
           }
-          _startControlsTimer();
+          return KeyEventResult.ignored;
         },
-        child: GestureDetector(
-          onTap: _toggleControls,
-          onDoubleTap: _toggleFullScreen,
+        child: MouseRegion(
+          onHover: (_) {
+            if (!_showControls) {
+              setState(() => _showControls = true);
+            }
+            _startControlsTimer();
+          },
+          child: GestureDetector(
+            onTap: _toggleControls,
+            onDoubleTap: _toggleFullScreen,
           child: Stack(
             children: [
               // Video Surface
@@ -465,8 +604,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildControlsOverlay() {
     return Container(
@@ -534,7 +674,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                       ],
                     ),
                   ),
-                  // Aspect Ratio Button
+                  // Screen Mode / Aspect Ratio Button
                   TextButton.icon(
                     style: TextButton.styleFrom(
                       foregroundColor: Colors.white,
@@ -542,8 +682,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     ),
                     icon: const Icon(Icons.aspect_ratio, size: 16, color: AppTheme.primary),
-                    label: Text(_aspectRatioName, style: const TextStyle(fontSize: 12)),
-                    onPressed: _toggleAspectRatio,
+                    label: Text('Pantalla: $_aspectRatioName', style: const TextStyle(fontSize: 12)),
+                    onPressed: _showScreenFormatDialog,
+                    onLongPress: _toggleAspectRatio,
                   ),
                   const SizedBox(width: 6),
                   // Audio Track Button

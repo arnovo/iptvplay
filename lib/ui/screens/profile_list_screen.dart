@@ -40,7 +40,7 @@ class ProfileListScreen extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.playlist_play, size: 80, color: AppTheme.textMuted.withOpacity(0.5)),
+                  Icon(Icons.playlist_play, size: 80, color: AppTheme.textMuted.withValues(alpha: 0.5)),
                   const SizedBox(height: 16),
                   const Text(
                     'No tienes listas añadidas',
@@ -68,7 +68,7 @@ class ProfileListScreen extends StatelessWidget {
           : ListView.separated(
               padding: const EdgeInsets.all(20),
               itemCount: profiles.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              separatorBuilder: (_, _) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 final profile = profiles[index];
                 final isActive = activeProfile?.id == profile.id;
@@ -98,8 +98,8 @@ class ProfileListScreen extends StatelessWidget {
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: profile.type == PlaylistType.m3u
-                                ? AppTheme.secondary.withOpacity(0.2)
-                                : AppTheme.primary.withOpacity(0.2),
+                                ? AppTheme.secondary.withValues(alpha: 0.2)
+                                : AppTheme.primary.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Icon(
@@ -128,7 +128,7 @@ class ProfileListScreen extends StatelessWidget {
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: AppTheme.primary.withOpacity(0.2),
+                                        color: AppTheme.primary.withValues(alpha: 0.2),
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: const Text(
