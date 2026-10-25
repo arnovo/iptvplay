@@ -4,8 +4,10 @@ import '../../providers/catalog_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/user_activity_provider.dart';
 import '../../models/series_item.dart';
+import '../../models/sort_option.dart';
 import '../theme/app_theme.dart';
 import '../widgets/category_sidebar.dart';
+import '../widgets/sort_filter_button.dart';
 import 'player_screen.dart';
 
 class SeriesScreen extends StatelessWidget {
@@ -19,10 +21,10 @@ class SeriesScreen extends StatelessWidget {
 
     List<SeriesItem> seriesList;
     if (selectedCategory == '__fav__') {
-      seriesList = catalog.content.series
+      seriesList = catalog.sortSeries(catalog.content.series
           .where((s) => userActivity.isFavorite(s.id, 'series'))
           .where((s) => catalog.seriesSearchQuery.isEmpty || s.name.toLowerCase().contains(catalog.seriesSearchQuery.toLowerCase()))
-          .toList();
+          .toList());
     } else {
       seriesList = catalog.filteredSeries;
     }
@@ -68,6 +70,19 @@ class SeriesScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 16),
+                    SortFilterButton(
+                      currentOption: catalog.seriesSort,
+                      availableOptions: const [
+                        SortOption.defaultOrder,
+                        SortOption.dateDesc,
+                        SortOption.dateAsc,
+                        SortOption.ratingDesc,
+                        SortOption.nameAsc,
+                        SortOption.nameDesc,
+                      ],
+                      onSelected: (opt) => catalog.setSeriesSort(opt),
+                    ),
+                    const SizedBox(width: 12),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(

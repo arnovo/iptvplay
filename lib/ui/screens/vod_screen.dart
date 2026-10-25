@@ -3,9 +3,11 @@ import 'package:provider/provider.dart';
 import '../../providers/catalog_provider.dart';
 import '../../providers/user_activity_provider.dart';
 import '../../models/vod_item.dart';
+import '../../models/sort_option.dart';
 import '../theme/app_theme.dart';
 import '../widgets/category_sidebar.dart';
 import '../widgets/media_detail_sheet.dart';
+import '../widgets/sort_filter_button.dart';
 import 'player_screen.dart';
 
 class VodScreen extends StatelessWidget {
@@ -19,10 +21,10 @@ class VodScreen extends StatelessWidget {
 
     List<VodItem> vods;
     if (selectedCategory == '__fav__') {
-      vods = catalog.content.vods
+      vods = catalog.sortVods(catalog.content.vods
           .where((v) => userActivity.isFavorite(v.id, 'vod'))
           .where((v) => catalog.vodSearchQuery.isEmpty || v.name.toLowerCase().contains(catalog.vodSearchQuery.toLowerCase()))
-          .toList();
+          .toList());
     } else {
       vods = catalog.filteredVods;
     }
@@ -69,6 +71,19 @@ class VodScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 16),
+                    SortFilterButton(
+                      currentOption: catalog.vodSort,
+                      availableOptions: const [
+                        SortOption.defaultOrder,
+                        SortOption.dateDesc,
+                        SortOption.dateAsc,
+                        SortOption.ratingDesc,
+                        SortOption.nameAsc,
+                        SortOption.nameDesc,
+                      ],
+                      onSelected: (opt) => catalog.setVodSort(opt),
+                    ),
+                    const SizedBox(width: 12),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(

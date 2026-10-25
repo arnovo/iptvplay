@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/playlist_profile.dart';
 import '../models/channel.dart';
 import '../models/vod_item.dart';
 import '../models/series_item.dart';
+import '../models/sort_option.dart';
 import '../services/iptv_repository.dart';
 
 class CatalogProvider extends ChangeNotifier {
@@ -22,6 +24,50 @@ class CatalogProvider extends ChangeNotifier {
   String _vodSearchQuery = '';
   String _seriesSearchQuery = '';
 
+  // Sort options
+  SortOption _liveSort = SortOption.defaultOrder;
+  SortOption _vodSort = SortOption.defaultOrder;
+  SortOption _seriesSort = SortOption.defaultOrder;
+
+  CatalogProvider() {
+    _loadSavedSortOptions();
+  }
+
+  Future<void> _loadSavedSortOptions() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final liveKey = prefs.getString('pref_live_sort');
+      final vodKey = prefs.getString('pref_vod_sort');
+      final seriesKey = prefs.getString('pref_series_sort');
+
+      if (liveKey != null) _liveSort = SortOption.fromKey(liveKey);
+      if (vodKey != null) _vodSort = SortOption.fromKey(vodKey);
+      if (seriesKey != null) _seriesSort = SortOption.fromKey(seriesKey);
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  Future<void> setLiveSort(SortOption option) async {
+    _liveSort = option;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('pref_live_sort', option.key);
+  }
+
+  Future<void> setVodSort(SortOption option) async {
+    _vodSort = option;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('pref_vod_sort', option.key);
+  }
+
+  Future<void> setSeriesSort(SortOption option) async {
+    _seriesSort = option;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('pref_series_sort', option.key);
+  }
+
   LoadedContent get content => _content;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -34,35 +80,115 @@ class CatalogProvider extends ChangeNotifier {
   String get vodSearchQuery => _vodSearchQuery;
   String get seriesSearchQuery => _seriesSearchQuery;
 
+  SortOption get liveSort => _liveSort;
+  SortOption get vodSort => _vodSort;
+  SortOption get seriesSort => _seriesSort;
+
+  // Helpers for date/rating sorting
+  int _parseDateOrTimestamp(String? val) {
+    if (val == null || val.isEmpty) return 0;
+    final timestamp = int.tryParse(val);
+    if (timestamp != null) return timestamp;
+    final dt = DateTime.tryParse(val);
+    if (dt != null) return dt.millisecondsSinceEpoch ~/ 1000;
+    return 0;
+  }
+
+  List<Channel> sortChannels(List<Channel> list) {
+    final copy = List<Channel>.from(list);
+    switch (_liveSort) {
+      case SortOption.nameAsc:
+        copy.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        break;
+      case SortOption.nameDesc:
+        copy.sort((a, b) => b.name.toLowerCase().compareTo(a.name.toLowerCase()));
+        break;
+      default:
+        break;
+    }
+    return copy;
+  }
+
+  List<VodItem> sortVods(List<VodItem> list) {
+    final copy = List<VodItem>.from(list);
+    switch (_vodSort) {
+      case SortOption.nameAsc:
+        copy.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        break;
+      case SortOption.nameDesc:
+        copy.sort((a, b) => b.name.toLowerCase().compareTo(a.name.toLowerCase()));
+        break;
+      case SortOption.dateDesc:
+        copy.sort((a, b) => _parseDateOrTimestamp(b.releaseDate).compareTo(_parseDateOrTimestamp(a.releaseDate)));
+        break;
+      case SortOption.dateAsc:
+        copy.sort((a, b) => _parseDateOrTimestamp(a.releaseDate).compareTo(_parseDateOrTimestamp(b.releaseDate)));
+        break;
+      case SortOption.ratingDesc:
+        copy.sort((a, b) => (double.tryParse(b.rating ?? '') ?? 0.0).compareTo(double.tryParse(a.rating ?? '') ?? 0.0));
+        break;
+      default:
+        break;
+    }
+    return copy;
+  }
+
+  List<SeriesItem> sortSeries(List<SeriesItem> list) {
+    final copy = List<SeriesItem>.from(list);
+    switch (_seriesSort) {
+      case SortOption.nameAsc:
+        copy.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        break;
+      case SortOption.nameDesc:
+        copy.sort((a, b) => b.name.toLowerCase().compareTo(a.name.toLowerCase()));
+        break;
+      case SortOption.dateDesc:
+        copy.sort((a, b) => _parseDateOrTimestamp(b.releaseDate).compareTo(_parseDateOrTimestamp(a.releaseDate)));
+        break;
+      case SortOption.dateAsc:
+        copy.sort((a, b) => _parseDateOrTimestamp(a.releaseDate).compareTo(_parseDateOrTimestamp(b.releaseDate)));
+        break;
+      case SortOption.ratingDesc:
+        copy.sort((a, b) => (double.tryParse(b.rating ?? '') ?? 0.0).compareTo(double.tryParse(a.rating ?? '') ?? 0.0));
+        break;
+      default:
+        break;
+    }
+    return copy;
+  }
+
   // Filtered lists
   List<Channel> get filteredChannels {
-    return _content.channels.where((channel) {
+    final filtered = _content.channels.where((channel) {
       final matchesCategory = _selectedLiveCategoryId == 'all' ||
           channel.categoryId == _selectedLiveCategoryId;
       final matchesQuery = _liveSearchQuery.isEmpty ||
           channel.name.toLowerCase().contains(_liveSearchQuery.toLowerCase());
       return matchesCategory && matchesQuery;
     }).toList();
+    return sortChannels(filtered);
   }
 
   List<VodItem> get filteredVods {
-    return _content.vods.where((vod) {
+    final filtered = _content.vods.where((vod) {
       final matchesCategory = _selectedVodCategoryId == 'all' ||
           vod.categoryId == _selectedVodCategoryId;
       final matchesQuery = _vodSearchQuery.isEmpty ||
           vod.name.toLowerCase().contains(_vodSearchQuery.toLowerCase());
       return matchesCategory && matchesQuery;
     }).toList();
+    return sortVods(filtered);
   }
 
   List<SeriesItem> get filteredSeries {
-    return _content.series.where((series) {
+    final filtered = _content.series.where((series) {
       final matchesCategory = _selectedSeriesCategoryId == 'all' ||
           series.categoryId == _selectedSeriesCategoryId;
       final matchesQuery = _seriesSearchQuery.isEmpty ||
           series.name.toLowerCase().contains(_seriesSearchQuery.toLowerCase());
       return matchesCategory && matchesQuery;
     }).toList();
+    return sortSeries(filtered);
   }
 
   Future<void> loadCatalog(PlaylistProfile profile, {bool forceRefresh = false}) async {

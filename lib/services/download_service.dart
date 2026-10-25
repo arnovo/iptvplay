@@ -97,37 +97,69 @@ class DownloadService {
 
   bool isRecording(String channelId) => _activeTokens.containsKey(channelId);
 
-  /// Download VOD movie or Series episode
+  Future<String> getVodFilePath(String id, String streamUrl) async {
+    final storagePath = await getStorageDirectoryPath();
+    final ext = streamUrl.contains('.mkv') ? 'mkv' : 'mp4';
+    return '$storagePath/vod_${id}_$ext';
+  }
+
+  /// Download or resume VOD movie or Series episode
   Future<void> downloadVod({
     required String id,
     required String title,
     required String streamUrl,
     required String type,
     String? posterUrl,
+    String? existingFilePath,
     required Function(int received, int total) onProgress,
     required Function(DownloadItem completed) onComplete,
     required Function(String error) onError,
   }) async {
     final storagePath = await getStorageDirectoryPath();
     final ext = streamUrl.contains('.mkv') ? 'mkv' : 'mp4';
-    final filename = 'vod_${id}_${DateTime.now().millisecondsSinceEpoch}.$ext';
-    final targetPath = '$storagePath/$filename';
+    final targetPath = existingFilePath ?? '$storagePath/vod_${id}_$ext';
+
+    final file = File(targetPath);
+    int existingBytes = 0;
+    if (await file.exists()) {
+      existingBytes = await file.length();
+    }
 
     final cancelToken = CancelToken();
     _activeTokens[id] = cancelToken;
 
     try {
-      await _dio.download(
+      final response = await _dio.get<ResponseBody>(
         streamUrl,
-        targetPath,
+        options: Options(
+          responseType: ResponseType.stream,
+          headers: existingBytes > 0 ? {'Range': 'bytes=$existingBytes-'} : null,
+        ),
         cancelToken: cancelToken,
-        onReceiveProgress: onProgress,
       );
 
-      _activeTokens.remove(id);
-      final file = File(targetPath);
-      final size = await file.length();
+      final isPartial = response.statusCode == 206;
+      final totalHeader = response.headers.value('content-length');
+      final totalFromServer = totalHeader != null ? int.tryParse(totalHeader) ?? 0 : 0;
+      final totalSize = isPartial ? existingBytes + totalFromServer : (totalFromServer > 0 ? totalFromServer : 0);
 
+      final sink = file.openWrite(mode: isPartial ? FileMode.append : FileMode.write);
+      int currentReceived = isPartial ? existingBytes : 0;
+
+      final stream = response.data?.stream;
+      if (stream != null) {
+        await for (final chunk in stream) {
+          sink.add(chunk);
+          currentReceived += chunk.length;
+          onProgress(currentReceived, totalSize);
+        }
+      }
+
+      await sink.flush();
+      await sink.close();
+      _activeTokens.remove(id);
+
+      final finalSize = await file.length();
       final completed = DownloadItem(
         id: id,
         title: title,
@@ -135,8 +167,8 @@ class DownloadService {
         localFilePath: targetPath,
         posterUrl: posterUrl,
         type: type,
-        totalBytes: size,
-        downloadedBytes: size,
+        totalBytes: finalSize,
+        downloadedBytes: finalSize,
         status: DownloadStatus.completed,
         createdAt: DateTime.now(),
       );

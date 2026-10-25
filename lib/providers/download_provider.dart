@@ -21,14 +21,44 @@ class DownloadProvider extends ChangeNotifier {
   Future<void> _init() async {
     if (_isInitialized) return;
     _items = await _service.loadDownloadsMetadata();
-    // Validate that downloaded files still exist on disk
     final List<DownloadItem> valid = [];
+    bool metadataChanged = false;
+
     for (final item in _items) {
-      if (await File(item.localFilePath).exists()) {
+      final file = File(item.localFilePath);
+      final exists = await file.exists();
+      if (!exists) {
+        metadataChanged = true;
+        continue;
+      }
+
+      final fileSize = await file.length();
+
+      // If app was killed while recording live TV: keep what was captured
+      if (item.status == DownloadStatus.recording) {
+        valid.add(item.copyWith(
+          status: DownloadStatus.completed,
+          totalBytes: fileSize,
+          downloadedBytes: fileSize,
+        ));
+        metadataChanged = true;
+      }
+      // If app was closed during a VOD download: keep partial file and mark paused
+      else if (item.status == DownloadStatus.downloading) {
+        valid.add(item.copyWith(
+          status: DownloadStatus.paused,
+          downloadedBytes: fileSize,
+        ));
+        metadataChanged = true;
+      } else {
         valid.add(item);
       }
     }
+
     _items = valid;
+    if (metadataChanged) {
+      await _service.saveDownloadsMetadata(_items);
+    }
     _isInitialized = true;
     notifyListeners();
   }
@@ -89,37 +119,72 @@ class DownloadProvider extends ChangeNotifier {
       return;
     }
 
+    final localPath = await _service.getVodFilePath(id, streamUrl);
+
     final initial = DownloadItem(
       id: id,
       title: title,
       originalUrl: streamUrl,
-      localFilePath: '',
+      localFilePath: localPath,
       posterUrl: posterUrl,
       type: type,
       status: DownloadStatus.downloading,
       createdAt: DateTime.now(),
     );
     _items.insert(0, initial);
+    await _service.saveDownloadsMetadata(_items);
     notifyListeners();
 
+    _executeVodDownload(initial);
+  }
+
+  Future<void> pauseDownload(String id) async {
+    _service.cancelDownload(id);
+    final idx = _items.indexWhere((i) => i.id == id);
+    if (idx != -1) {
+      final item = _items[idx];
+      final file = File(item.localFilePath);
+      final size = await file.exists() ? await file.length() : item.downloadedBytes;
+      _items[idx] = item.copyWith(
+        status: DownloadStatus.paused,
+        downloadedBytes: size,
+      );
+      await _service.saveDownloadsMetadata(_items);
+      notifyListeners();
+    }
+  }
+
+  Future<void> resumeDownload(String id) async {
+    final idx = _items.indexWhere((i) => i.id == id);
+    if (idx == -1) return;
+
+    final item = _items[idx];
+    _items[idx] = item.copyWith(status: DownloadStatus.downloading);
+    notifyListeners();
+
+    _executeVodDownload(item);
+  }
+
+  Future<void> _executeVodDownload(DownloadItem item) async {
     await _service.downloadVod(
-      id: id,
-      title: title,
-      streamUrl: streamUrl,
-      type: type,
-      posterUrl: posterUrl,
+      id: item.id,
+      title: item.title,
+      streamUrl: item.originalUrl,
+      type: item.type,
+      posterUrl: item.posterUrl,
+      existingFilePath: item.localFilePath,
       onProgress: (received, total) {
-        final idx = _items.indexWhere((i) => i.id == id);
+        final idx = _items.indexWhere((i) => i.id == item.id);
         if (idx != -1) {
           _items[idx] = _items[idx].copyWith(
             downloadedBytes: received,
-            totalBytes: total,
+            totalBytes: total > 0 ? total : _items[idx].totalBytes,
           );
           notifyListeners();
         }
       },
       onComplete: (completed) async {
-        final idx = _items.indexWhere((i) => i.id == id);
+        final idx = _items.indexWhere((i) => i.id == item.id);
         if (idx != -1) {
           _items[idx] = completed;
           await _service.saveDownloadsMetadata(_items);
@@ -127,11 +192,14 @@ class DownloadProvider extends ChangeNotifier {
         }
       },
       onError: (err) async {
-        final idx = _items.indexWhere((i) => i.id == id);
+        final idx = _items.indexWhere((i) => i.id == item.id);
         if (idx != -1) {
-          _items[idx] = _items[idx].copyWith(status: DownloadStatus.failed);
-          await _service.saveDownloadsMetadata(_items);
-          notifyListeners();
+          // If cancelled by pause, it's already marked paused
+          if (_items[idx].status != DownloadStatus.paused) {
+            _items[idx] = _items[idx].copyWith(status: DownloadStatus.failed);
+            await _service.saveDownloadsMetadata(_items);
+            notifyListeners();
+          }
         }
       },
     );

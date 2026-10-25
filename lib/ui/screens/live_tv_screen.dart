@@ -6,10 +6,12 @@ import '../../providers/epg_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/download_provider.dart';
 import '../../models/channel.dart';
+import '../../models/sort_option.dart';
 import '../theme/app_theme.dart';
 import '../widgets/category_sidebar.dart';
 import '../widgets/channel_epg_dialog.dart';
 import '../widgets/catchup_dialog.dart';
+import '../widgets/sort_filter_button.dart';
 import 'player_screen.dart';
 
 class LiveTvScreen extends StatelessWidget {
@@ -27,10 +29,10 @@ class LiveTvScreen extends StatelessWidget {
 
     List<Channel> channels;
     if (selectedCategory == '__fav__') {
-      channels = catalog.content.channels
+      channels = catalog.sortChannels(catalog.content.channels
           .where((c) => userActivity.isFavorite(c.id, 'live'))
           .where((c) => catalog.liveSearchQuery.isEmpty || c.name.toLowerCase().contains(catalog.liveSearchQuery.toLowerCase()))
-          .toList();
+          .toList());
     } else if (selectedCategory == '__recents__') {
       channels = userActivity.recentChannels
           .where((c) => catalog.liveSearchQuery.isEmpty || c.name.toLowerCase().contains(catalog.liveSearchQuery.toLowerCase()))
@@ -86,6 +88,16 @@ class LiveTvScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 16),
+                    SortFilterButton(
+                      currentOption: catalog.liveSort,
+                      availableOptions: const [
+                        SortOption.defaultOrder,
+                        SortOption.nameAsc,
+                        SortOption.nameDesc,
+                      ],
+                      onSelected: (opt) => catalog.setLiveSort(opt),
+                    ),
+                    const SizedBox(width: 12),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(

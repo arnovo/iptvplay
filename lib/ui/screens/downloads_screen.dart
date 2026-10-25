@@ -180,19 +180,29 @@ class DownloadsScreen extends StatelessWidget {
                                     isRecording
                                         ? 'Grabando en directo (${item.formattedSize})'
                                         : isDownloading
-                                            ? 'Descargando... ${(item.progressFraction * 100).toStringAsFixed(0)}%'
-                                            : '${item.formattedSize} • Guardado localmente',
+                                            ? 'Descargando... ${(item.progressFraction * 100).toStringAsFixed(0)}% (${item.formattedSize})'
+                                            : item.status == DownloadStatus.paused
+                                                ? 'Descarga pausada • ${item.formattedSize} guardados'
+                                                : item.status == DownloadStatus.failed
+                                                    ? 'Descarga interrumpida • ${item.formattedSize}'
+                                                    : '${item.formattedSize} • Guardado localmente',
                                     style: TextStyle(
-                                      color: isRecording ? AppTheme.accentRed : AppTheme.textMuted,
+                                      color: isRecording
+                                          ? AppTheme.accentRed
+                                          : item.status == DownloadStatus.paused
+                                              ? AppTheme.accentYellow
+                                              : item.status == DownloadStatus.failed
+                                                  ? AppTheme.accentRed
+                                                  : AppTheme.textMuted,
                                       fontSize: 12,
                                     ),
                                   ),
-                                  if (isDownloading) ...[
+                                  if (isDownloading || item.status == DownloadStatus.paused) ...[
                                     const SizedBox(height: 8),
                                     LinearProgressIndicator(
-                                      value: item.progressFraction,
+                                      value: item.progressFraction > 0 ? item.progressFraction : null,
                                       backgroundColor: AppTheme.surfaceLight,
-                                      color: AppTheme.primary,
+                                      color: item.status == DownloadStatus.paused ? AppTheme.accentYellow : AppTheme.primary,
                                       minHeight: 3,
                                     ),
                                   ],
@@ -216,6 +226,56 @@ class DownloadsScreen extends StatelessWidget {
                                     streamUrl: item.originalUrl,
                                   );
                                 },
+                              )
+                            else if (isDownloading)
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  ElevatedButton.icon(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppTheme.accentYellow.withValues(alpha: 0.2),
+                                      foregroundColor: AppTheme.accentYellow,
+                                    ),
+                                    icon: const Icon(Icons.pause, size: 18),
+                                    label: const Text('Pausar'),
+                                    onPressed: () {
+                                      downloadProvider.pauseDownload(item.id);
+                                    },
+                                  ),
+                                  const SizedBox(width: 8),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline, color: AppTheme.textMuted, size: 20),
+                                    tooltip: 'Cancelar descarga',
+                                    onPressed: () {
+                                      downloadProvider.deleteDownload(item.id);
+                                    },
+                                  ),
+                                ],
+                              )
+                            else if (item.status == DownloadStatus.paused || item.status == DownloadStatus.failed)
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  ElevatedButton.icon(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppTheme.primary,
+                                      foregroundColor: Colors.black,
+                                    ),
+                                    icon: const Icon(Icons.play_arrow, size: 18),
+                                    label: const Text('Reanudar'),
+                                    onPressed: () {
+                                      downloadProvider.resumeDownload(item.id);
+                                    },
+                                  ),
+                                  const SizedBox(width: 8),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline, color: AppTheme.textMuted, size: 20),
+                                    tooltip: 'Eliminar descarga',
+                                    onPressed: () {
+                                      downloadProvider.deleteDownload(item.id);
+                                    },
+                                  ),
+                                ],
                               )
                             else if (item.status == DownloadStatus.completed)
                               Row(
