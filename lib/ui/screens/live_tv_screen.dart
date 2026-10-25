@@ -158,8 +158,10 @@ class LiveTvScreen extends StatelessWidget {
                           final channel = channels[index];
                           final isFav = userActivity.isFavorite(channel.id, 'live');
 
-                          return ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                          return Material(
+                            color: Colors.transparent,
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                             leading: Container(
                               width: 50,
                               height: 50,
@@ -344,7 +346,8 @@ class LiveTvScreen extends StatelessWidget {
                                 ),
                               );
                             },
-                          );
+                          ),
+                        );
                         },
                       ),
               ),

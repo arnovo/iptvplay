@@ -20,7 +20,7 @@ class LocalStreamServer {
   final Set<HttpResponse> _clients = {};
   final List<List<int>> _recentChunks = [];
   int _recentBytes = 0;
-  static const int _maxRecentBytes = 512 * 1024; // 512 KB burst buffer for instant player start
+  static const int _maxRecentBytes = 384 * 1024; // ~384 KB buffer
 
   final StreamController<int> _clientsController = StreamController<int>.broadcast();
   Stream<int> get activeClientsStream => _clientsController.stream;
@@ -145,7 +145,7 @@ class LocalStreamServer {
     final userAgent = request.headers.value('user-agent')?.toLowerCase() ?? '';
     final acceptHeader = request.headers.value('accept')?.toLowerCase() ?? '';
 
-    // Detect media players (VLC for iOS/Mac, Kodi, ExoPlayer, Smart TV, Infuse)
+    // Detect dedicated media player apps (VLC, Kodi, ExoPlayer, TiviMate, Smart TV apps)
     final isMediaPlayer = userAgent.contains('vlc') ||
         userAgent.contains('kodi') ||
         userAgent.contains('exoplayer') ||
@@ -155,24 +155,30 @@ class LocalStreamServer {
         userAgent.contains('infuse') ||
         userAgent.contains('applecoremedia');
 
-    final isBrowser = (acceptHeader.contains('text/html') ||
-            acceptHeader.contains('application/xhtml+xml')) &&
-        !isMediaPlayer;
-
-    // If client is a web browser requesting web player
-    if (isBrowser && (path == '/' || path == '/player' || path == '/watch' || path == '/stream' || path.isEmpty)) {
-      await _serveWebPlayer(request);
-      return;
-    }
-
-    // Media stream endpoints for VLC, Smart TV, or in-browser video tags
-    if (path == '/stream' ||
-        path == '/stream.ts' ||
+    // Route explicit media stream endpoints directly to media streaming
+    if (path == '/stream.ts' ||
         path == '/stream.m3u8' ||
         path == '/live' ||
         path == '/raw' ||
         path == '/video.ts' ||
-        (isMediaPlayer && (path == '/' || path.isEmpty))) {
+        (isMediaPlayer && (path == '/' || path == '/stream' || path.isEmpty))) {
+      await _handleMediaRequest(request);
+      return;
+    }
+
+    // Default: Web Player for all browsers and direct navigations
+    if (!isMediaPlayer &&
+        (path == '/' ||
+            path == '/player' ||
+            path == '/watch' ||
+            path.isEmpty ||
+            (path == '/stream' && acceptHeader.contains('text/html')))) {
+      await _serveWebPlayer(request);
+      return;
+    }
+
+    // For non-browser /stream requests without .ts extension
+    if (path == '/stream') {
       await _handleMediaRequest(request);
       return;
     }
@@ -381,6 +387,7 @@ class LocalStreamServer {
       --primary-glow: rgba(0, 229, 255, 0.35);
       --accent-green: #10B981;
       --accent-red: #EF4444;
+      --accent-yellow: #F59E0B;
       --text: #F8FAFC;
       --text-muted: #94A3B8;
     }
@@ -487,6 +494,17 @@ class LocalStreamServer {
       border: 1px solid rgba(0, 229, 255, 0.3);
       pointer-events: none;
       z-index: 10;
+    }
+    .notice-banner {
+      display: none;
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: #FCD34D;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 12px;
+      line-height: 1.4;
+      margin-bottom: 12px;
     }
     .unmute-btn {
       position: absolute;
@@ -650,6 +668,10 @@ class LocalStreamServer {
   </div>
 
   <div class="main-container">
+    <div id="audioNotice" class="notice-banner">
+      ⚠️ <strong>Audio no compatible en navegador web:</strong> Este canal emite con audio MPEG Layer 2 / AC3 (estándar de emisión satélite). El vídeo se reproduce en directo en el navegador; para escuchar el audio con máxima calidad, pulsa en <strong>"▶ Abrir en VLC"</strong> o copia el enlace directo.
+    </div>
+
     <div class="player-card">
       <div class="player-wrapper">
         <video id="player" controls autoplay playsinline></video>
@@ -692,7 +714,7 @@ class LocalStreamServer {
             <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 11px;" id="btnCopyStream" onclick="copyText('$mediaUrl', 'btnCopyStream')">Copiar</button>
           </div>
           <div class="url-code">$mediaUrl</div>
-          <p style="font-size: 11px; color: var(--text-muted);">Pega esta URL en reproductores externos para reproducir el flujo continuo de alta definición.</p>
+          <p style="font-size: 11px; color: var(--text-muted);">Pega esta URL en reproductores externos para reproducir el flujo continuo con todos los canales de audio y subtítulos.</p>
         </div>
       </div>
 
@@ -704,13 +726,15 @@ class LocalStreamServer {
   </div>
 
   <script>
-    const streamUrl = '$mediaUrl';
+    const streamUrl = window.location.origin + '/stream.ts';
     const video = document.getElementById('player');
     const statusBadge = document.getElementById('statusBadge');
     const unmuteBtn = document.getElementById('unmuteBtn');
+    const audioNotice = document.getElementById('audioNotice');
     const isM3u8 = ${isM3u8 ? 'true' : 'false'};
     let mpegPlayer = null;
     let hlsPlayer = null;
+    let fallbackToVideoOnlyTried = false;
 
     function setStatus(text, isError = false) {
       if (!statusBadge) return;
@@ -745,40 +769,69 @@ class LocalStreamServer {
         }
       }
 
-      // MPEG-TS Playback via mpegts.js (type: 'm2ts')
-      if (typeof mpegts !== 'undefined' && mpegts.getFeatureList().mseLivePlayback) {
-        try {
-          mpegPlayer = mpegts.createPlayer({
-            type: 'm2ts',
-            isLive: true,
-            url: streamUrl
-          }, {
-            enableWorker: true,
-            lazyLoad: false,
-            stashInitialSize: 128,
-            liveBufferLatencyChasing: true,
-            autoCleanupSourceBuffer: true
-          });
-          mpegPlayer.attachMediaElement(video);
-          mpegPlayer.load();
-          attemptPlay();
+      // Start MPEG-TS player (with auto-fallback to video-only if audio codec is unsupported by MSE)
+      startMpegts(true);
+    }
 
-          mpegPlayer.on(mpegts.Events.ERROR, (type, detail) => {
-            console.warn('mpegts error:', type, detail);
-            setStatus('Reconectando...', true);
-          });
-          mpegPlayer.on(mpegts.Events.MEDIA_INFO, () => {
-            setStatus('En directo (MPEG-TS)');
-          });
-          return;
-        } catch (e) {
-          console.error('Failed to create mpegts player:', e);
-        }
+    function startMpegts(enableAudio) {
+      if (typeof mpegts === 'undefined' || !mpegts.getFeatureList().mseLivePlayback) {
+        // Native fallback (Safari / iOS)
+        video.src = streamUrl;
+        attemptPlay();
+        return;
       }
 
-      // Native fallback (Safari / iOS)
-      video.src = streamUrl;
-      attemptPlay();
+      if (mpegPlayer) {
+        try { mpegPlayer.destroy(); } catch (_) {}
+        mpegPlayer = null;
+      }
+
+      try {
+        mpegPlayer = mpegts.createPlayer({
+          type: 'm2ts',
+          isLive: true,
+          url: streamUrl,
+          hasAudio: enableAudio,
+          hasVideo: true,
+        }, {
+          enableWorker: true,
+          lazyLoad: false,
+          stashInitialSize: 256,
+          liveBufferLatencyChasing: true,
+          autoCleanupSourceBuffer: true,
+          fixAudioTimestampGap: false,
+        });
+
+        mpegPlayer.attachMediaElement(video);
+        mpegPlayer.load();
+        attemptPlay();
+
+        mpegPlayer.on(mpegts.Events.ERROR, (type, detail) => {
+          console.warn('mpegts error:', type, detail);
+          // If browser MSE rejects the audio format (common with European TV MP2 audio)
+          if (enableAudio && !fallbackToVideoOnlyTried && 
+              (detail === 'MediaMSEError' || type === 'MediaError')) {
+            fallbackToVideoOnlyTried = true;
+            console.log('Falling back to video-only in browser MSE');
+            if (audioNotice) audioNotice.style.display = 'block';
+            setStatus('Audio MPEG-2 no soportado en web • Vídeo en directo', false);
+            startMpegts(false);
+            return;
+          }
+          setStatus('Reconectando...', true);
+        });
+
+        mpegPlayer.on(mpegts.Events.MEDIA_INFO, (info) => {
+          console.log('Media info:', info);
+          setStatus('En directo (MPEG-TS)');
+        });
+      } catch (e) {
+        console.error('Failed to create mpegts player:', e);
+        if (enableAudio && !fallbackToVideoOnlyTried) {
+          fallbackToVideoOnlyTried = true;
+          startMpegts(false);
+        }
+      }
     }
 
     function attemptPlay() {
@@ -806,6 +859,8 @@ class LocalStreamServer {
     };
 
     function reloadPlayer() {
+      fallbackToVideoOnlyTried = false;
+      if (audioNotice) audioNotice.style.display = 'none';
       if (mpegPlayer) {
         try { mpegPlayer.destroy(); } catch (_) {}
         mpegPlayer = null;
