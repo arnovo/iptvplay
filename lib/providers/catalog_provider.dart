@@ -5,7 +5,9 @@ import '../models/channel.dart';
 import '../models/vod_item.dart';
 import '../models/series_item.dart';
 import '../models/sort_option.dart';
+import '../models/app_log.dart';
 import '../services/iptv_repository.dart';
+import '../services/log_service.dart';
 
 class CatalogProvider extends ChangeNotifier {
   final IptvRepository _repository = IptvRepository();
@@ -200,6 +202,11 @@ class CatalogProvider extends ChangeNotifier {
       if (cached != null && (cached.channels.isNotEmpty || cached.vods.isNotEmpty || cached.series.isNotEmpty)) {
         _content = cached;
         _isLoading = false;
+        LogService.instance.info(
+          LogCategory.network,
+          'Catálogo cargado desde caché local para perfil "${profile.name}"',
+          details: '${cached.channels.length} canales • ${cached.vods.length} películas • ${cached.series.length} series',
+        );
         notifyListeners();
         return;
       }
@@ -209,13 +216,29 @@ class CatalogProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
+    LogService.instance.info(
+      LogCategory.network,
+      'Sincronizando catálogo desde servidor IPTV para perfil "${profile.name}"...',
+      details: 'Servidor: ${profile.serverUrl ?? profile.m3uUrl ?? "M3U"}',
+    );
+
     try {
       _content = await _repository.loadProfileContent(profile);
       await _repository.saveCachedContent(profile.id, _content);
       _selectedLiveCategoryId = 'all';
       _selectedVodCategoryId = 'all';
       _selectedSeriesCategoryId = 'all';
+      LogService.instance.success(
+        LogCategory.network,
+        'Catálogo sincronizado con éxito para "${profile.name}"',
+        details: '${_content.channels.length} canales • ${_content.vods.length} películas • ${_content.series.length} series',
+      );
     } catch (e) {
+      LogService.instance.error(
+        LogCategory.network,
+        'Fallo al sincronizar catálogo para "${profile.name}"',
+        details: e.toString(),
+      );
       final cached = await _repository.getCachedContent(profile.id);
       if (cached != null) {
         _content = cached;

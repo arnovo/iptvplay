@@ -93,10 +93,13 @@ class DownloadProvider extends ChangeNotifier {
         title: title,
         streamUrl: streamUrl,
         posterUrl: posterUrl,
-        onByteUpdate: (bytes) {
+        onByteUpdate: (bytes, speed) {
           final idx = _items.indexWhere((i) => i.id == channelId && i.status == DownloadStatus.recording);
           if (idx != -1) {
-            _items[idx] = _items[idx].copyWith(downloadedBytes: bytes);
+            _items[idx] = _items[idx].copyWith(
+              downloadedBytes: bytes,
+              speedBytesPerSecond: speed,
+            );
             notifyListeners();
           }
         },
@@ -148,6 +151,7 @@ class DownloadProvider extends ChangeNotifier {
       _items[idx] = item.copyWith(
         status: DownloadStatus.paused,
         downloadedBytes: size,
+        speedBytesPerSecond: 0.0,
       );
       await _service.saveDownloadsMetadata(_items);
       notifyListeners();
@@ -159,7 +163,10 @@ class DownloadProvider extends ChangeNotifier {
     if (idx == -1) return;
 
     final item = _items[idx];
-    _items[idx] = item.copyWith(status: DownloadStatus.downloading);
+    _items[idx] = item.copyWith(
+      status: DownloadStatus.downloading,
+      speedBytesPerSecond: 0.0,
+    );
     notifyListeners();
 
     _executeVodDownload(item);
@@ -173,12 +180,13 @@ class DownloadProvider extends ChangeNotifier {
       type: item.type,
       posterUrl: item.posterUrl,
       existingFilePath: item.localFilePath,
-      onProgress: (received, total) {
+      onProgress: (received, total, speed) {
         final idx = _items.indexWhere((i) => i.id == item.id);
         if (idx != -1) {
           _items[idx] = _items[idx].copyWith(
             downloadedBytes: received,
             totalBytes: total > 0 ? total : _items[idx].totalBytes,
+            speedBytesPerSecond: speed,
           );
           notifyListeners();
         }
@@ -186,7 +194,7 @@ class DownloadProvider extends ChangeNotifier {
       onComplete: (completed) async {
         final idx = _items.indexWhere((i) => i.id == item.id);
         if (idx != -1) {
-          _items[idx] = completed;
+          _items[idx] = completed.copyWith(speedBytesPerSecond: 0.0);
           await _service.saveDownloadsMetadata(_items);
           notifyListeners();
         }
@@ -194,9 +202,11 @@ class DownloadProvider extends ChangeNotifier {
       onError: (err) async {
         final idx = _items.indexWhere((i) => i.id == item.id);
         if (idx != -1) {
-          // If cancelled by pause, it's already marked paused
           if (_items[idx].status != DownloadStatus.paused) {
-            _items[idx] = _items[idx].copyWith(status: DownloadStatus.failed);
+            _items[idx] = _items[idx].copyWith(
+              status: DownloadStatus.failed,
+              speedBytesPerSecond: 0.0,
+            );
             await _service.saveDownloadsMetadata(_items);
             notifyListeners();
           }

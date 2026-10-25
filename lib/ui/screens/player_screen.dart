@@ -10,6 +10,8 @@ import 'package:window_manager/window_manager.dart';
 import '../../providers/user_activity_provider.dart';
 import '../../providers/download_provider.dart';
 import '../../providers/stream_server_provider.dart';
+import '../../models/app_log.dart';
+import '../../services/log_service.dart';
 import '../widgets/lan_stream_dialog.dart';
 import '../theme/app_theme.dart';
 
@@ -100,12 +102,23 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   Future<void> _initPlayer() async {
     try {
+      LogService.instance.info(
+        LogCategory.player,
+        'Reproduciendo: ${widget.title}',
+        details: 'Tipo: ${widget.isLive ? "En vivo" : (widget.type ?? "VOD")} • URL: ${widget.streamUrl}',
+      );
+
       _player.stream.buffering.listen((buffering) {
         if (mounted) setState(() => _isBuffering = buffering);
       });
 
       _player.stream.error.listen((error) {
         if (mounted && error.isNotEmpty) {
+          LogService.instance.error(
+            LogCategory.player,
+            'Error de reproducción en: ${widget.title}',
+            details: error,
+          );
           setState(() => _errorMessage = error);
         }
       });
@@ -126,6 +139,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
       _startControlsTimer();
     } catch (e) {
+      LogService.instance.error(
+        LogCategory.player,
+        'Fallo al inicializar reproductor para ${widget.title}',
+        details: e.toString(),
+      );
       if (mounted) setState(() => _errorMessage = e.toString());
     }
   }

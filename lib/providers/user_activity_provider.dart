@@ -127,4 +127,16 @@ class UserActivityProvider extends ChangeNotifier {
     }).toList();
     notifyListeners();
   }
+
+  Future<void> removeRecentChannel(String channelId) async {
+    await _service.removeRecentChannel(channelId);
+    _recentChannels.removeWhere((c) => c.id == channelId);
+    notifyListeners();
+  }
+
+  Future<void> clearRecentChannels() async {
+    await _service.clearRecentChannels();
+    _recentChannels.clear();
+    notifyListeners();
+  }
 }

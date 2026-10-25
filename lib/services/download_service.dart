@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/download_item.dart';
+import '../models/app_log.dart';
+import 'log_service.dart';
 
 class DownloadService {
   final Dio _dio = Dio(
@@ -33,7 +35,7 @@ class DownloadService {
     required String title,
     required String streamUrl,
     String? posterUrl,
-    required Function(int bytes) onByteUpdate,
+    required Function(int bytes, double speed) onByteUpdate,
   }) async {
     final storagePath = await getStorageDirectoryPath();
     final sanitizedTitle = title.replaceAll(RegExp(r'[^\w\s\.-]'), '_');
@@ -57,6 +59,12 @@ class DownloadService {
       createdAt: DateTime.now(),
     );
 
+    LogService.instance.info(
+      LogCategory.downloads,
+      'Grabación en directo iniciada: $sanitizedTitle',
+      details: 'Stream URL: $streamUrl • Destino: $targetPath',
+    );
+
     // Run recording stream asynchronously
     _dio.get<ResponseBody>(
       streamUrl,
@@ -64,17 +72,36 @@ class DownloadService {
       cancelToken: cancelToken,
     ).then((response) async {
       int totalBytesWritten = 0;
+      int lastSampleBytes = 0;
+      DateTime lastSampleTime = DateTime.now();
+      double currentSpeed = 0.0;
+
       final stream = response.data?.stream;
       if (stream != null) {
         await for (final chunk in stream) {
           sink.add(chunk);
           totalBytesWritten += chunk.length;
-          onByteUpdate(totalBytesWritten);
+
+          final now = DateTime.now();
+          final elapsedMs = now.difference(lastSampleTime).inMilliseconds;
+          if (elapsedMs >= 600) {
+            final delta = totalBytesWritten - lastSampleBytes;
+            currentSpeed = delta / (elapsedMs / 1000.0);
+            lastSampleBytes = totalBytesWritten;
+            lastSampleTime = now;
+            onByteUpdate(totalBytesWritten, currentSpeed);
+          }
         }
       }
       await sink.flush();
       await sink.close();
-    }).catchError((_) async {
+      onByteUpdate(totalBytesWritten, 0.0);
+    }).catchError((err) async {
+      LogService.instance.error(
+        LogCategory.downloads,
+        'Error durante la grabación en directo: $sanitizedTitle',
+        details: err.toString(),
+      );
       try {
         await sink.flush();
         await sink.close();
@@ -93,6 +120,10 @@ class DownloadService {
       await sink.flush();
       await sink.close();
     }
+    LogService.instance.success(
+      LogCategory.downloads,
+      'Grabación en directo finalizada para canal $channelId',
+    );
   }
 
   bool isRecording(String channelId) => _activeTokens.containsKey(channelId);
@@ -111,7 +142,7 @@ class DownloadService {
     required String type,
     String? posterUrl,
     String? existingFilePath,
-    required Function(int received, int total) onProgress,
+    required Function(int received, int total, double speed) onProgress,
     required Function(DownloadItem completed) onComplete,
     required Function(String error) onError,
   }) async {
@@ -124,6 +155,12 @@ class DownloadService {
     if (await file.exists()) {
       existingBytes = await file.length();
     }
+
+    LogService.instance.info(
+      LogCategory.downloads,
+      'Iniciando descarga: $title',
+      details: 'Tipo: $type • Bytes previos: $existingBytes • Archivo: $targetPath',
+    );
 
     final cancelToken = CancelToken();
     _activeTokens[id] = cancelToken;
@@ -145,13 +182,25 @@ class DownloadService {
 
       final sink = file.openWrite(mode: isPartial ? FileMode.append : FileMode.write);
       int currentReceived = isPartial ? existingBytes : 0;
+      int lastSampleBytes = currentReceived;
+      DateTime lastSampleTime = DateTime.now();
+      double currentSpeed = 0.0;
 
       final stream = response.data?.stream;
       if (stream != null) {
         await for (final chunk in stream) {
           sink.add(chunk);
           currentReceived += chunk.length;
-          onProgress(currentReceived, totalSize);
+
+          final now = DateTime.now();
+          final elapsedMs = now.difference(lastSampleTime).inMilliseconds;
+          if (elapsedMs >= 600) {
+            final delta = currentReceived - lastSampleBytes;
+            currentSpeed = delta / (elapsedMs / 1000.0);
+            lastSampleBytes = currentReceived;
+            lastSampleTime = now;
+            onProgress(currentReceived, totalSize, currentSpeed);
+          }
         }
       }
 
@@ -173,9 +222,20 @@ class DownloadService {
         createdAt: DateTime.now(),
       );
 
+      LogService.instance.success(
+        LogCategory.downloads,
+        'Descarga completada con éxito: $title',
+        details: 'Tamaño: ${completed.formattedSize} • Archivo: $targetPath',
+      );
+
       onComplete(completed);
     } catch (e) {
       _activeTokens.remove(id);
+      LogService.instance.error(
+        LogCategory.downloads,
+        'Error o interrupción en descarga: $title',
+        details: e.toString(),
+      );
       onError(e.toString());
     }
   }
@@ -183,6 +243,10 @@ class DownloadService {
   void cancelDownload(String id) {
     _activeTokens[id]?.cancel();
     _activeTokens.remove(id);
+    LogService.instance.info(
+      LogCategory.downloads,
+      'Descarga pausada / cancelada (ID: $id)',
+    );
   }
 
   /// Metadata persistence

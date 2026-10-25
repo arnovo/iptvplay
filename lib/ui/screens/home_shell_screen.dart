@@ -7,11 +7,13 @@ import '../../providers/profile_provider.dart';
 import '../../providers/catalog_provider.dart';
 import '../../providers/epg_provider.dart';
 import '../../providers/download_provider.dart';
+import '../../providers/log_provider.dart';
 import '../theme/app_theme.dart';
 import 'live_tv_screen.dart';
 import 'vod_screen.dart';
 import 'series_screen.dart';
 import 'downloads_screen.dart';
+import 'logs_screen.dart';
 import 'profile_list_screen.dart';
 import 'add_profile_dialog.dart';
 import '../widgets/backup_dialog.dart';
@@ -182,6 +184,12 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
                   badge: '${context.watch<DownloadProvider>().items.length}',
                   index: 3,
                 ),
+                _buildNavItem(
+                  icon: Icons.receipt_long,
+                  title: 'Registros',
+                  badge: '${context.watch<LogProvider>().totalCount}',
+                  index: 4,
+                ),
 
                 const Spacer(),
 
@@ -299,6 +307,13 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
   }
 
   Widget _buildBody(dynamic activeProfile, CatalogProvider catalogProvider) {
+    if (_selectedIndex == 3) {
+      return const DownloadsScreen();
+    }
+    if (_selectedIndex == 4) {
+      return const LogsScreen();
+    }
+
     if (activeProfile == null) {
       return Center(
         child: Column(
@@ -403,6 +418,8 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
         return const SeriesScreen();
       case 3:
         return const DownloadsScreen();
+      case 4:
+        return const LogsScreen();
       default:
         return const LiveTvScreen();
     }

@@ -115,4 +115,17 @@ class UserActivityService {
     final rawList = current.map((e) => json.encode(e)).toList();
     await prefs.setStringList(_keyRecentChannels, rawList);
   }
+
+  Future<void> removeRecentChannel(String channelId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final current = await getRecentChannelsRaw();
+    current.removeWhere((item) => item['id'] == channelId);
+    final rawList = current.map((e) => json.encode(e)).toList();
+    await prefs.setStringList(_keyRecentChannels, rawList);
+  }
+
+  Future<void> clearRecentChannels() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_keyRecentChannels);
+  }
 }

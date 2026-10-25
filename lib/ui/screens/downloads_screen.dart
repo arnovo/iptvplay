@@ -176,27 +176,89 @@ class DownloadsScreen extends StatelessWidget {
                                     ],
                                   ),
                                   const SizedBox(height: 6),
-                                  Text(
-                                    isRecording
-                                        ? 'Grabando en directo (${item.formattedSize})'
-                                        : isDownloading
-                                            ? 'Descargando... ${(item.progressFraction * 100).toStringAsFixed(0)}% (${item.formattedSize})'
-                                            : item.status == DownloadStatus.paused
-                                                ? 'Descarga pausada • ${item.formattedSize} guardados'
-                                                : item.status == DownloadStatus.failed
-                                                    ? 'Descarga interrumpida • ${item.formattedSize}'
-                                                    : '${item.formattedSize} • Guardado localmente',
-                                    style: TextStyle(
-                                      color: isRecording
-                                          ? AppTheme.accentRed
-                                          : item.status == DownloadStatus.paused
-                                              ? AppTheme.accentYellow
-                                              : item.status == DownloadStatus.failed
-                                                  ? AppTheme.accentRed
-                                                  : AppTheme.textMuted,
-                                      fontSize: 12,
+                                  if (isRecording)
+                                    Row(
+                                      children: [
+                                        Text(
+                                          'Grabando en directo (${item.formattedSize})',
+                                          style: const TextStyle(color: AppTheme.accentRed, fontSize: 12),
+                                        ),
+                                        if (item.formattedSpeed.isNotEmpty) ...[
+                                          const SizedBox(width: 8),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                            decoration: BoxDecoration(
+                                              color: AppTheme.accentRed.withValues(alpha: 0.15),
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(Icons.speed, size: 12, color: AppTheme.accentRed),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  item.formattedSpeed,
+                                                  style: const TextStyle(color: AppTheme.accentRed, fontSize: 11, fontWeight: FontWeight.bold),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    )
+                                  else if (isDownloading)
+                                    Row(
+                                      children: [
+                                        Text(
+                                          'Descargando... ${(item.progressFraction * 100).toStringAsFixed(0)}% (${item.formattedSize})',
+                                          style: const TextStyle(color: AppTheme.primary, fontSize: 12),
+                                        ),
+                                        if (item.formattedSpeed.isNotEmpty) ...[
+                                          const SizedBox(width: 8),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                            decoration: BoxDecoration(
+                                              color: AppTheme.primary.withValues(alpha: 0.15),
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(Icons.speed, size: 12, color: AppTheme.primary),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  item.formattedSpeed,
+                                                  style: const TextStyle(color: AppTheme.primary, fontSize: 11, fontWeight: FontWeight.bold),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                        if (item.formattedEta.isNotEmpty) ...[
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            item.formattedEta,
+                                            style: const TextStyle(color: AppTheme.textMuted, fontSize: 11),
+                                          ),
+                                        ],
+                                      ],
+                                    )
+                                  else
+                                    Text(
+                                      item.status == DownloadStatus.paused
+                                          ? 'Descarga pausada • ${item.formattedSize} guardados'
+                                          : item.status == DownloadStatus.failed
+                                              ? 'Descarga interrumpida • ${item.formattedSize}'
+                                              : '${item.formattedSize} • Guardado localmente',
+                                      style: TextStyle(
+                                        color: item.status == DownloadStatus.paused
+                                            ? AppTheme.accentYellow
+                                            : item.status == DownloadStatus.failed
+                                                ? AppTheme.accentRed
+                                                : AppTheme.textMuted,
+                                        fontSize: 12,
+                                      ),
                                     ),
-                                  ),
                                   if (isDownloading || item.status == DownloadStatus.paused) ...[
                                     const SizedBox(height: 8),
                                     LinearProgressIndicator(

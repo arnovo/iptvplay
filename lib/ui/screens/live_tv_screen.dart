@@ -98,6 +98,20 @@ class LiveTvScreen extends StatelessWidget {
                       onSelected: (opt) => catalog.setLiveSort(opt),
                     ),
                     const SizedBox(width: 12),
+                    if (selectedCategory == '__recents__' && channels.isNotEmpty) ...[
+                      TextButton.icon(
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppTheme.accentRed,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        ),
+                        icon: const Icon(Icons.delete_sweep, size: 16),
+                        label: const Text('Limpiar recientes', style: TextStyle(fontSize: 12)),
+                        onPressed: () {
+                          userActivity.clearRecentChannels();
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                    ],
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
@@ -297,6 +311,14 @@ class LiveTvScreen extends StatelessWidget {
                                     userActivity.toggleFavorite(channel.id, 'live');
                                   },
                                 ),
+                                if (selectedCategory == '__recents__')
+                                  IconButton(
+                                    icon: const Icon(Icons.close, color: AppTheme.textMuted, size: 20),
+                                    tooltip: 'Quitar de recientes',
+                                    onPressed: () {
+                                      userActivity.removeRecentChannel(channel.id);
+                                    },
+                                  ),
                                 const SizedBox(width: 4),
                                 Container(
                                   padding: const EdgeInsets.all(8),

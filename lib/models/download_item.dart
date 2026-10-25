@@ -18,6 +18,7 @@ class DownloadItem {
   final DownloadStatus status;
   final DateTime createdAt;
   final int durationSeconds;
+  final double speedBytesPerSecond;
 
   DownloadItem({
     required this.id,
@@ -31,6 +32,7 @@ class DownloadItem {
     required this.status,
     required this.createdAt,
     this.durationSeconds = 0,
+    this.speedBytesPerSecond = 0.0,
   });
 
   double get progressFraction {
@@ -51,6 +53,27 @@ class DownloadItem {
     return '${mb.toStringAsFixed(1)} MB';
   }
 
+  String get formattedSpeed {
+    if (speedBytesPerSecond <= 0) return '';
+    final kb = speedBytesPerSecond / 1024;
+    if (kb >= 1024) {
+      final mb = kb / 1024;
+      return '${mb.toStringAsFixed(1)} MB/s';
+    }
+    return '${kb.toStringAsFixed(0)} KB/s';
+  }
+
+  String get formattedEta {
+    if (speedBytesPerSecond <= 0 || totalBytes <= 0 || downloadedBytes >= totalBytes) return '';
+    final remainingBytes = totalBytes - downloadedBytes;
+    final secondsRemaining = (remainingBytes / speedBytesPerSecond).round();
+    if (secondsRemaining <= 0) return '';
+    if (secondsRemaining < 60) return '$secondsRemaining s restantes';
+    final mins = secondsRemaining ~/ 60;
+    final secs = secondsRemaining % 60;
+    return '$mins min ${secs}s restantes';
+  }
+
   DownloadItem copyWith({
     String? id,
     String? title,
@@ -63,6 +86,7 @@ class DownloadItem {
     DownloadStatus? status,
     DateTime? createdAt,
     int? durationSeconds,
+    double? speedBytesPerSecond,
   }) {
     return DownloadItem(
       id: id ?? this.id,
@@ -76,6 +100,7 @@ class DownloadItem {
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       durationSeconds: durationSeconds ?? this.durationSeconds,
+      speedBytesPerSecond: speedBytesPerSecond ?? this.speedBytesPerSecond,
     );
   }
 
