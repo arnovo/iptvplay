@@ -9,6 +9,8 @@ class StreamServerProvider extends ChangeNotifier {
 
   bool get isRunning => _server.isRunning;
   String? get streamUrl => _server.streamUrl;
+  String? get webPlayerUrl => _server.webPlayerUrl;
+  String? get rawStreamUrl => _server.rawStreamUrl;
   String? get targetTitle => _server.targetTitle;
   int get clientCount => _clientCount;
   String? get localIp => _server.localIp;
