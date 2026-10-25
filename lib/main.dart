@@ -7,6 +7,8 @@ import 'package:window_manager/window_manager.dart';
 import 'providers/profile_provider.dart';
 import 'providers/catalog_provider.dart';
 import 'providers/user_activity_provider.dart';
+import 'providers/epg_provider.dart';
+import 'providers/download_provider.dart';
 import 'ui/theme/app_theme.dart';
 import 'ui/screens/home_shell_screen.dart';
 
@@ -24,6 +26,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
         ChangeNotifierProvider(create: (_) => CatalogProvider()),
         ChangeNotifierProvider(create: (_) => UserActivityProvider()),
+        ChangeNotifierProvider(create: (_) => EpgProvider()),
+        ChangeNotifierProvider(create: (_) => DownloadProvider()),
       ],
       child: const IptvApp(),
     ),

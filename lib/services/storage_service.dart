@@ -28,6 +28,12 @@ class StorageService {
     await prefs.setStringList(_keyProfiles, rawList);
   }
 
+  Future<void> saveProfiles(List<PlaylistProfile> profiles) async {
+    final prefs = await SharedPreferences.getInstance();
+    final rawList = profiles.map((p) => p.toJson()).toList();
+    await prefs.setStringList(_keyProfiles, rawList);
+  }
+
   Future<void> deleteProfile(String id) async {
     final prefs = await SharedPreferences.getInstance();
     final profiles = await getProfiles();

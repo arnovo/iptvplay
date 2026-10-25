@@ -5,6 +5,7 @@ import '../../providers/user_activity_provider.dart';
 import '../../models/vod_item.dart';
 import '../theme/app_theme.dart';
 import '../widgets/category_sidebar.dart';
+import '../widgets/media_detail_sheet.dart';
 import 'player_screen.dart';
 
 class VodScreen extends StatelessWidget {
@@ -360,84 +361,9 @@ class VodScreen extends StatelessWidget {
   void _showMovieDetails(BuildContext context, VodItem movie, int? savedPosition) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: AppTheme.border),
-        ),
-        title: Text(movie.name),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (movie.rating != null)
-              Row(
-                children: [
-                  const Icon(Icons.star, color: Colors.amber, size: 16),
-                  const SizedBox(width: 4),
-                  Text('Calificación: ${movie.rating}'),
-                ],
-              ),
-            const SizedBox(height: 12),
-            if (savedPosition != null && savedPosition > 10)
-              Text(
-                'Tienes una reproducción previa guardada en el minuto ${(savedPosition / 60).floor()}:${(savedPosition % 60).toString().padLeft(2, '0')}.',
-                style: const TextStyle(color: AppTheme.primary, fontSize: 13),
-              )
-            else
-              const Text(
-                '¿Deseas iniciar la reproducción?',
-                style: TextStyle(color: AppTheme.textSecondary),
-              ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancelar'),
-          ),
-          if (savedPosition != null && savedPosition > 10)
-            OutlinedButton(
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => PlayerScreen(
-                      streamUrl: movie.url,
-                      title: movie.name,
-                      isLive: false,
-                      contentId: movie.id,
-                      type: 'vod',
-                      posterUrl: movie.posterUrl,
-                      initialPositionSeconds: 0,
-                    ),
-                  ),
-                );
-              },
-              child: const Text('Desde el inicio'),
-            ),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => PlayerScreen(
-                    streamUrl: movie.url,
-                    title: movie.name,
-                    isLive: false,
-                    contentId: movie.id,
-                    type: 'vod',
-                    posterUrl: movie.posterUrl,
-                    initialPositionSeconds: savedPosition,
-                  ),
-                ),
-              );
-            },
-            icon: const Icon(Icons.play_arrow),
-            label: Text(savedPosition != null && savedPosition > 10 ? 'Reanudar' : 'Reproducir'),
-          ),
-        ],
+      builder: (ctx) => MediaDetailSheet(
+        vod: movie,
+        resumeSeconds: savedPosition,
       ),
     );
   }

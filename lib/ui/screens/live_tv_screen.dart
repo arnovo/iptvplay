@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/catalog_provider.dart';
 import '../../providers/user_activity_provider.dart';
+import '../../providers/epg_provider.dart';
+import '../../providers/profile_provider.dart';
+import '../../providers/download_provider.dart';
 import '../../models/channel.dart';
 import '../theme/app_theme.dart';
 import '../widgets/category_sidebar.dart';
+import '../widgets/channel_epg_dialog.dart';
+import '../widgets/catchup_dialog.dart';
 import 'player_screen.dart';
 
 class LiveTvScreen extends StatelessWidget {
@@ -14,6 +19,10 @@ class LiveTvScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final catalog = context.watch<CatalogProvider>();
     final userActivity = context.watch<UserActivityProvider>();
+    final epg = context.watch<EpgProvider>();
+    final profileProvider = context.watch<ProfileProvider>();
+    final downloadProvider = context.watch<DownloadProvider>();
+    final activeProfile = profileProvider.activeProfile;
     final selectedCategory = catalog.selectedLiveCategoryId;
 
     List<Channel> channels;
@@ -146,19 +155,126 @@ class LiveTvScreen extends StatelessWidget {
                                     )
                                   : const Icon(Icons.live_tv, color: AppTheme.textMuted, size: 24),
                             ),
-                            title: Text(
-                              channel.name,
-                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            title: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    channel.name,
+                                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (downloadProvider.isChannelRecording(channel.id))
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.accentRed,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Text('REC', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+                                  ),
+                              ],
                             ),
-                            subtitle: Text(
-                              channel.groupTitle ?? 'Canal ${channel.channelNumber ?? index + 1}',
-                              style: const TextStyle(color: AppTheme.textMuted, fontSize: 12),
+                            subtitle: Builder(
+                              builder: (context) {
+                                final currentProg = epg.getCurrentProgram(
+                                  channel.id,
+                                  channelTvgId: channel.epgChannelId,
+                                  channelName: channel.name,
+                                );
+
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (currentProg != null) ...[
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        '${currentProg.title} • ${currentProg.formattedTimeRange}',
+                                        style: const TextStyle(
+                                          color: AppTheme.primary,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(2),
+                                        child: LinearProgressIndicator(
+                                          value: currentProg.progressFraction,
+                                          backgroundColor: AppTheme.surfaceLight,
+                                          color: AppTheme.primary,
+                                          minHeight: 2.5,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 3),
+                                    ],
+                                    Text(
+                                      channel.groupTitle ?? 'Canal ${channel.channelNumber ?? index + 1}',
+                                      style: const TextStyle(color: AppTheme.textMuted, fontSize: 11),
+                                    ),
+                                  ],
+                                );
+                              },
                             ),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
+                                // EPG Guide Button
+                                IconButton(
+                                  icon: const Icon(Icons.event_note, color: AppTheme.textSecondary, size: 20),
+                                  tooltip: 'Guía EPG del canal',
+                                  onPressed: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (_) => ChannelEpgDialog(channel: channel),
+                                    );
+                                  },
+                                ),
+                                // Catch-up / Replay Button
+                                if (activeProfile != null)
+                                  IconButton(
+                                    icon: const Icon(Icons.history, color: AppTheme.textSecondary, size: 20),
+                                    tooltip: 'Replay TV (Programas anteriores)',
+                                    onPressed: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (_) => CatchupDialog(
+                                          channel: channel,
+                                          profile: activeProfile,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                // PVR Record Button
+                                IconButton(
+                                  icon: Icon(
+                                    downloadProvider.isChannelRecording(channel.id) ? Icons.stop_circle : Icons.fiber_manual_record,
+                                    color: downloadProvider.isChannelRecording(channel.id) ? AppTheme.accentRed : AppTheme.textMuted,
+                                    size: 20,
+                                  ),
+                                  tooltip: downloadProvider.isChannelRecording(channel.id) ? 'Detener grabación' : 'Grabar en directo',
+                                  onPressed: () {
+                                    downloadProvider.toggleLiveRecording(
+                                      channelId: channel.id,
+                                      title: channel.name,
+                                      streamUrl: channel.url,
+                                      posterUrl: channel.logoUrl,
+                                    );
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          downloadProvider.isChannelRecording(channel.id)
+                                              ? 'Grabación de "${channel.name}" detenida y guardada'
+                                              : 'Grabando "${channel.name}" en segundo plano...',
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                // Favorite Star Button
                                 IconButton(
                                   icon: Icon(
                                     isFav ? Icons.star : Icons.star_border,

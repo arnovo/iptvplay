@@ -8,6 +8,7 @@ import 'package:media_kit_video/media_kit_video.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 import '../../providers/user_activity_provider.dart';
+import '../../providers/download_provider.dart';
 import '../theme/app_theme.dart';
 
 class PlayerScreen extends StatefulWidget {
@@ -715,6 +716,69 @@ class _PlayerScreenState extends State<PlayerScreen> {
                             activity.toggleFavorite(widget.contentId!, widget.type!);
                             _startControlsTimer();
                           },
+                        );
+                      },
+                    ),
+                  // Live PVR Record Button
+                  if (widget.isLive && widget.contentId != null)
+                    Consumer<DownloadProvider>(
+                      builder: (context, downloads, _) {
+                        final isRec = downloads.isChannelRecording(widget.contentId!);
+                        return IconButton(
+                          icon: Icon(
+                            isRec ? Icons.stop_circle : Icons.fiber_manual_record,
+                            color: isRec ? AppTheme.accentRed : Colors.white,
+                            size: 22,
+                          ),
+                          tooltip: isRec ? 'Detener grabación PVR' : 'Grabar transmisión',
+                          onPressed: () {
+                            downloads.toggleLiveRecording(
+                              channelId: widget.contentId!,
+                              title: widget.title,
+                              streamUrl: widget.streamUrl,
+                              posterUrl: widget.posterUrl,
+                            );
+                            _startControlsTimer();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  isRec
+                                      ? 'Grabación de "${widget.title}" detenida y guardada en Descargas'
+                                      : 'Grabando "${widget.title}" en segundo plano...',
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  // VOD Offline Download Button
+                  if (!widget.isLive && widget.contentId != null)
+                    Consumer<DownloadProvider>(
+                      builder: (context, downloads, _) {
+                        final isDownloaded = downloads.completedItems.any((i) => i.id == widget.contentId);
+                        return IconButton(
+                          icon: Icon(
+                            isDownloaded ? Icons.download_done : Icons.download,
+                            color: isDownloaded ? AppTheme.accentGreen : Colors.white,
+                            size: 22,
+                          ),
+                          tooltip: isDownloaded ? 'Descargado localmente' : 'Descargar para ver sin conexión',
+                          onPressed: isDownloaded
+                              ? null
+                              : () {
+                                  downloads.startVodDownload(
+                                    id: widget.contentId!,
+                                    title: widget.title,
+                                    streamUrl: widget.streamUrl,
+                                    type: widget.type ?? 'vod',
+                                    posterUrl: widget.posterUrl,
+                                  );
+                                  _startControlsTimer();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Descarga iniciada en segundo plano')),
+                                  );
+                                },
                         );
                       },
                     ),

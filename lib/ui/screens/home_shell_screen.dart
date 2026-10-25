@@ -5,12 +5,16 @@ import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/catalog_provider.dart';
+import '../../providers/epg_provider.dart';
+import '../../providers/download_provider.dart';
 import '../theme/app_theme.dart';
 import 'live_tv_screen.dart';
 import 'vod_screen.dart';
 import 'series_screen.dart';
+import 'downloads_screen.dart';
 import 'profile_list_screen.dart';
 import 'add_profile_dialog.dart';
+import '../widgets/backup_dialog.dart';
 
 class HomeShellScreen extends StatefulWidget {
   const HomeShellScreen({super.key});
@@ -52,6 +56,7 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
     await profileProvider.loadProfiles();
     if (mounted && profileProvider.activeProfile != null) {
       context.read<CatalogProvider>().loadCatalog(profileProvider.activeProfile!);
+      context.read<EpgProvider>().loadEpg(profileProvider.activeProfile!);
     }
   }
 
@@ -171,11 +176,28 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
                   badge: '${catalogProvider.content.series.length}',
                   index: 2,
                 ),
+                _buildNavItem(
+                  icon: Icons.download_done,
+                  title: 'Descargas & PVR',
+                  badge: '${context.watch<DownloadProvider>().items.length}',
+                  index: 3,
+                ),
 
                 const Spacer(),
 
                 // Bottom actions
                 const Divider(color: AppTheme.border, height: 1),
+                ListTile(
+                  dense: true,
+                  leading: const Icon(Icons.cloud_sync, color: AppTheme.textSecondary, size: 20),
+                  title: const Text('Copia de seguridad', style: TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (_) => const BackupDialog(),
+                    );
+                  },
+                ),
                 if (activeProfile != null)
                   ListTile(
                     dense: true,
@@ -183,7 +205,10 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
                     title: const Text('Recargar lista', style: TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
                     onTap: catalogProvider.isLoading
                         ? null
-                        : () => catalogProvider.loadCatalog(activeProfile),
+                        : () {
+                            catalogProvider.loadCatalog(activeProfile);
+                            context.read<EpgProvider>().loadEpg(activeProfile, forceRefresh: true);
+                          },
                   ),
                 ListTile(
                   dense: true,
@@ -373,6 +398,8 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
         return const VodScreen();
       case 2:
         return const SeriesScreen();
+      case 3:
+        return const DownloadsScreen();
       default:
         return const LiveTvScreen();
     }
