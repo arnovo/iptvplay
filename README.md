@@ -49,6 +49,7 @@
 * **XMLTV / EPG Program Guide:** High-speed XMLTV parser supporting `.xml` and compressed `.xml.gz` formats with persistent disk cache.
 * **LAN Stream Relay Server:** Embedded local HTTP server on port `8088` to re-stream current playback across other devices on the same local network without extra IPTV connections.
 * **TheMovieDatabase (TMDB) Integration:** Automatic movie/series enrichment with plot synopses, community ratings, release dates, and high-definition posters.
+* **Centralized Settings & Collapsible Menus:** Unified settings hub for playlists, parental controls, AES-256 backups, logs, and playback buffers. Collapsible left navigation bar and category sidebar maximizing viewing space.
 * **Local Privacy First & Hardware Encryption:** Zero telemetry; Xtream passwords secured with `flutter_secure_storage` (Keychain/Keystore) and strict anti-SSRF protections.
 
 ---

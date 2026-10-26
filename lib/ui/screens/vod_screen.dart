@@ -52,20 +52,22 @@ class VodScreen extends StatelessWidget {
 
     return Row(
       children: [
-        CategorySidebar(
-          categories: categories,
-          selectedCategoryId: selectedCategory,
-          totalCount: catalog.content.vods.length,
-          onSelectCategory: (id) => catalog.setVodCategory(id),
-          customTopItems: [
-            CategoryCustomItem(
-              id: '__fav__',
-              name: l10n.favorites,
-              icon: Icons.star,
-              count: userActivity.favVod.length,
-            ),
-          ],
-        ),
+        if (catalog.isSubmenuVisible)
+          CategorySidebar(
+            categories: categories,
+            selectedCategoryId: selectedCategory,
+            totalCount: catalog.content.vods.length,
+            onSelectCategory: (id) => catalog.setVodCategory(id),
+            onToggleCollapse: () => catalog.toggleSubmenu(),
+            customTopItems: [
+              CategoryCustomItem(
+                id: '__fav__',
+                name: l10n.favorites,
+                icon: Icons.star,
+                count: userActivity.favVod.length,
+              ),
+            ],
+          ),
         Expanded(
           child: Column(
             children: [
@@ -78,6 +80,31 @@ class VodScreen extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
+                    // Botón Ocultar/Mostrar Submenú de Categorías
+                    TvFocusable(
+                      borderRadius: BorderRadius.circular(8),
+                      onPressed: () => catalog.toggleSubmenu(),
+                      child: Container(
+                        padding: const EdgeInsets.all(9),
+                        decoration: BoxDecoration(
+                          color: catalog.isSubmenuVisible
+                              ? AppTheme.surfaceLight
+                              : AppTheme.primary.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: catalog.isSubmenuVisible ? AppTheme.border : AppTheme.primary,
+                          ),
+                        ),
+                        child: Icon(
+                          catalog.isSubmenuVisible
+                              ? Icons.view_sidebar_rounded
+                              : Icons.view_sidebar_outlined,
+                          size: 18,
+                          color: catalog.isSubmenuVisible ? AppTheme.textSecondary : AppTheme.primary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: TextField(
                         onChanged: (val) => catalog.setVodSearch(val),

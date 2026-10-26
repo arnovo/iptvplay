@@ -41,7 +41,7 @@ flowchart LR
 
 When launching the application for the first time, you will be prompted to add your playlist:
 
-1. Click on the **`+ Add Playlist`** button in the left sidebar (or click the active profile card at the top).
+1. Click on the **Settings** (`Configuración`) section in the left sidebar (or click the active profile card at the top) and select **+ Add Playlist**.
 2. Choose the format provided by your IPTV service provider:
 
 ```
@@ -71,8 +71,10 @@ When launching the application for the first time, you will be prompted to add y
    * **Continue Watching:** Instant resume progress bar with remaining duration.
    * **Favorite Channels:** Instant preview with the live show currently airing.
    * **Broadcast Reminders:** Upcoming scheduled alerts with countdown.
-2. **Live TV Screen:**
+2. **Live TV Screen & Maximized Space:**
    * Filter channels by category, favorites, or recent history.
+   * **Collapse/Expand Left Menu:** Tap the collapse button (`Icons.menu_open`) in the sidebar header or the floating `Menu` button to maximize viewing space.
+   * **Collapse/Expand Category Submenu:** Tap the sidebar toggle button (`<` / sidebar icon) in the header to hide the category panel and view the channel grid in full width.
    * **Voice Search:** Press the microphone icon to quickly search by title or genre.
    * Click any channel to play in full screen.
 

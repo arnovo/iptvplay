@@ -41,6 +41,10 @@ class AppLocalizations {
   String get activeLanguageName => isEnglish ? 'English' : 'Español';
   String get switchLanguage =>
       isEnglish ? 'Cambiar a Español' : 'Switch to English';
+  String get settings => isEnglish ? 'Settings' : 'Configuración';
+  String get settingsSubtitle => isEnglish
+      ? 'Playlists, parental control, logs and system preferences'
+      : 'Listas, control parental, logs y preferencias del sistema';
 
   // Profiles & Onboarding
   String get noActiveProfile =>

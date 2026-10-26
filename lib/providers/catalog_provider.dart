@@ -31,6 +31,22 @@ class CatalogProvider extends ChangeNotifier {
   SortOption _vodSort = SortOption.defaultOrder;
   SortOption _seriesSort = SortOption.defaultOrder;
 
+  // Submenu (Category Sidebar) visibility
+  bool _isSubmenuVisible = true;
+  bool get isSubmenuVisible => _isSubmenuVisible;
+
+  void toggleSubmenu() {
+    _isSubmenuVisible = !_isSubmenuVisible;
+    notifyListeners();
+  }
+
+  void setSubmenuVisible(bool visible) {
+    if (_isSubmenuVisible != visible) {
+      _isSubmenuVisible = visible;
+      notifyListeners();
+    }
+  }
+
   CatalogProvider() {
     _loadSavedSortOptions();
   }

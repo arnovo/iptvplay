@@ -24,6 +24,7 @@ class CategorySidebar extends StatelessWidget {
   final ValueChanged<String> onSelectCategory;
   final int totalCount;
   final List<CategoryCustomItem> customTopItems;
+  final VoidCallback? onToggleCollapse;
 
   const CategorySidebar({
     super.key,
@@ -32,6 +33,7 @@ class CategorySidebar extends StatelessWidget {
     required this.onSelectCategory,
     required this.totalCount,
     this.customTopItems = const [],
+    this.onToggleCollapse,
   });
 
   @override
@@ -49,15 +51,37 @@ class CategorySidebar extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Text(
-              l10n.isEnglish ? 'CATEGORIES' : 'CATEGORÍAS',
-              style: const TextStyle(
-                color: AppTheme.textMuted,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.1,
-              ),
+            padding: const EdgeInsets.fromLTRB(16, 12, 10, 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  l10n.isEnglish ? 'CATEGORIES' : 'CATEGORÍAS',
+                  style: const TextStyle(
+                    color: AppTheme.textMuted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.1,
+                  ),
+                ),
+                if (onToggleCollapse != null)
+                  TvFocusable(
+                    borderRadius: BorderRadius.circular(6),
+                    onPressed: onToggleCollapse!,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceLight,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Icon(
+                        Icons.chevron_left_rounded,
+                        size: 18,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
           Expanded(

@@ -9,8 +9,6 @@ import '../../providers/profile_provider.dart';
 import '../../providers/catalog_provider.dart';
 import '../../providers/epg_provider.dart';
 import '../../providers/download_provider.dart';
-import '../../providers/log_provider.dart';
-import '../../providers/language_provider.dart';
 import '../../services/parental_service.dart';
 import '../../services/reminder_service.dart';
 import '../../l10n/app_localizations.dart';
@@ -20,12 +18,10 @@ import 'live_tv_screen.dart';
 import 'vod_screen.dart';
 import 'series_screen.dart';
 import 'downloads_screen.dart';
-import 'logs_screen.dart';
+import 'settings_screen.dart';
 import 'profile_list_screen.dart';
 import 'player_screen.dart';
 import 'add_profile_dialog.dart';
-import '../widgets/backup_dialog.dart';
-import '../widgets/parental_dialog.dart';
 import '../widgets/pin_code_dialog.dart';
 import '../widgets/miniplayer_bar.dart';
 import '../widgets/tv_focusable.dart';
@@ -40,6 +36,7 @@ class HomeShellScreen extends StatefulWidget {
 class _HomeShellScreenState extends State<HomeShellScreen> {
   int _selectedIndex = 0;
   bool _isFullScreen = false;
+  bool _isSidebarExpanded = true;
   StreamSubscription<EpgReminder>? _reminderSub;
 
   @override
@@ -229,12 +226,10 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
       }
     }
   }
-
   @override
   Widget build(BuildContext context) {
     final profileProvider = context.watch<ProfileProvider>();
     final catalogProvider = context.watch<CatalogProvider>();
-    final languageProvider = context.watch<LanguageProvider>();
     final activeProfile = profileProvider.activeProfile;
     final l10n = context.l10n;
 
@@ -244,50 +239,99 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
           Expanded(
             child: Row(
               children: [
-                // Navigation Rail / Sidebar
-                Container(
-                  width: 220,
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeInOut,
+                  width: _isSidebarExpanded ? 220 : 68,
                   color: AppTheme.surface,
                   child: Material(
                     color: Colors.transparent,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // App Logo
                         Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.primary.withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: AppTheme.primary.withValues(alpha: 0.4)),
-                                ),
-                                child: const Icon(Icons.live_tv, color: AppTheme.primary, size: 24),
-                              ),
-                              const SizedBox(width: 12),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    l10n.appTitle,
-                                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
-                                  ),
-                                  Text(
-                                    l10n.smartPlayer,
-                                    style: const TextStyle(color: AppTheme.primary, fontSize: 11, fontWeight: FontWeight.bold),
-                                  ),
-                                ],
-                              ),
-                            ],
+                          padding: EdgeInsets.symmetric(
+                            horizontal: _isSidebarExpanded ? 14 : 10,
+                            vertical: 14,
                           ),
+                          child: _isSidebarExpanded
+                              ? Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(7),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.primary.withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(color: AppTheme.primary.withValues(alpha: 0.4)),
+                                      ),
+                                      child: const Icon(Icons.live_tv, color: AppTheme.primary, size: 22),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            l10n.appTitle,
+                                            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Text(
+                                            l10n.smartPlayer,
+                                            style: const TextStyle(
+                                              color: AppTheme.primary,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    TvFocusable(
+                                      borderRadius: BorderRadius.circular(6),
+                                      onPressed: () => setState(() => _isSidebarExpanded = false),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(6),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.surfaceLight,
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: const Icon(
+                                          Icons.menu_open_rounded,
+                                          size: 18,
+                                          color: AppTheme.textMuted,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : Center(
+                                  child: TvFocusable(
+                                    borderRadius: BorderRadius.circular(8),
+                                    onPressed: () => setState(() => _isSidebarExpanded = true),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.surfaceLight,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: AppTheme.border),
+                                      ),
+                                      child: const Icon(
+                                        Icons.menu_rounded,
+                                        size: 20,
+                                        color: AppTheme.primary,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                         ),
 
-                        // Active Profile Card
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: _isSidebarExpanded ? 14 : 10,
+                            vertical: 4,
+                          ),
                           child: TvFocusable(
                             borderRadius: BorderRadius.circular(10),
                             onPressed: () async {
@@ -302,6 +346,26 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
                               );
                             },
                             builder: (context, isFocused, isHovered) {
+                              if (!_isSidebarExpanded) {
+                                return Tooltip(
+                                  message: activeProfile?.name ?? l10n.noActiveProfile,
+                                  child: Container(
+                                    height: 44,
+                                    decoration: BoxDecoration(
+                                      color: isFocused
+                                          ? AppTheme.primary.withValues(alpha: 0.15)
+                                          : AppTheme.surfaceLight,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: isFocused ? AppTheme.primary : AppTheme.border,
+                                      ),
+                                    ),
+                                    child: const Center(
+                                      child: Icon(Icons.account_circle, color: AppTheme.primary, size: 22),
+                                    ),
+                                  ),
+                                );
+                              }
                               return Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
@@ -342,11 +406,10 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
                           ),
                         ),
 
-                        const SizedBox(height: 16),
-                        const Divider(color: AppTheme.border, height: 1),
                         const SizedBox(height: 12),
+                        const Divider(color: AppTheme.border, height: 1),
+                        const SizedBox(height: 10),
 
-                        // Navigation Tabs
                         _buildNavItem(
                           icon: Icons.home_rounded,
                           title: l10n.isEnglish ? 'Home' : 'Inicio',
@@ -377,276 +440,25 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
                           badge: '${context.watch<DownloadProvider>().items.length}',
                           index: 4,
                         ),
-                        _buildNavItem(
-                          icon: Icons.receipt_long,
-                          title: l10n.logs,
-                          badge: '${context.watch<LogProvider>().totalCount}',
-                          index: 5,
-                        ),
 
                         const Spacer(),
-
-                        // Bottom actions
                         const Divider(color: AppTheme.border, height: 1),
+                        const SizedBox(height: 6),
 
-                        // Language Switcher Tile
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                          child: TvFocusable(
-                            borderRadius: BorderRadius.circular(8),
-                            onPressed: () => languageProvider.toggleLanguage(),
-                            builder: (context, isFocused, isHovered) {
-                              return Container(
-                                decoration: BoxDecoration(
-                                  color: isFocused ? AppTheme.primary.withValues(alpha: 0.1) : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: ListTile(
-                                  dense: true,
-                                  leading: const Icon(Icons.language, color: AppTheme.textSecondary, size: 20),
-                                  title: Text(
-                                    l10n.language,
-                                    style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
-                                  ),
-                                  trailing: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: AppTheme.surfaceLight,
-                                      borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(color: AppTheme.primary.withValues(alpha: 0.4)),
-                                    ),
-                                    child: Text(
-                                      '${languageProvider.currentFlag} ${languageProvider.currentLanguageName}',
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        color: AppTheme.primary,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                  onTap: () => languageProvider.toggleLanguage(),
-                                ),
-                              );
-                            },
-                          ),
+                        _buildNavItem(
+                          icon: Icons.settings_rounded,
+                          title: l10n.settings,
+                          badge: '',
+                          index: 5,
                         ),
-
-                        // Backup
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                          child: TvFocusable(
-                            borderRadius: BorderRadius.circular(8),
-                            onPressed: () {
-                              showDialog(
-                                context: context,
-                                builder: (_) => const BackupDialog(),
-                              );
-                            },
-                            builder: (context, isFocused, isHovered) {
-                              return Container(
-                                decoration: BoxDecoration(
-                                  color: isFocused ? AppTheme.primary.withValues(alpha: 0.1) : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: ListTile(
-                                  dense: true,
-                                  leading: const Icon(Icons.cloud_sync, color: AppTheme.textSecondary, size: 20),
-                                  title: Text(l10n.backup, style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
-                                  onTap: () {
-                                    showDialog(
-                                      context: context,
-                                      builder: (_) => const BackupDialog(),
-                                    );
-                                  },
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-
-                        // Control Parental
-                        Builder(
-                          builder: (context) {
-                            final parental = context.watch<ParentalService>();
-                            final isUnlocked = parental.isEnabled && parental.isSessionUnlocked;
-
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                              child: TvFocusable(
-                                borderRadius: BorderRadius.circular(8),
-                                onPressed: () {
-                                  showDialog(
-                                    context: context,
-                                    builder: (_) => const ParentalDialog(),
-                                  );
-                                },
-                                builder: (context, isFocused, isHovered) {
-                                  return Container(
-                                    decoration: BoxDecoration(
-                                      color: isFocused ? AppTheme.primary.withValues(alpha: 0.1) : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: ListTile(
-                                      dense: true,
-                                      leading: Icon(
-                                        parental.isEnabled
-                                            ? (isUnlocked ? Icons.lock_open_rounded : Icons.lock_rounded)
-                                            : Icons.shield_outlined,
-                                        color: parental.isEnabled
-                                            ? (isUnlocked ? AppTheme.accentGreen : AppTheme.accentYellow)
-                                            : AppTheme.textSecondary,
-                                        size: 20,
-                                      ),
-                                      title: Text(
-                                        'Control Parental',
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          color: parental.isEnabled
-                                              ? (isUnlocked ? AppTheme.accentGreen : AppTheme.accentYellow)
-                                              : AppTheme.textSecondary,
-                                          fontWeight: parental.isEnabled ? FontWeight.bold : FontWeight.normal,
-                                        ),
-                                      ),
-                                      trailing: parental.isEnabled
-                                          ? Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                              decoration: BoxDecoration(
-                                                color: (isUnlocked ? AppTheme.accentGreen : AppTheme.accentYellow).withValues(alpha: 0.2),
-                                                borderRadius: BorderRadius.circular(4),
-                                                border: Border.all(
-                                                  color: isUnlocked ? AppTheme.accentGreen : AppTheme.accentYellow,
-                                                  width: 0.8,
-                                                ),
-                                              ),
-                                              child: Text(
-                                                isUnlocked ? 'ABIERTO' : 'PIN',
-                                                style: TextStyle(
-                                                  fontSize: 8,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: isUnlocked ? AppTheme.accentGreen : AppTheme.accentYellow,
-                                                ),
-                                              ),
-                                            )
-                                          : null,
-                                      onTap: () {
-                                        showDialog(
-                                          context: context,
-                                          builder: (_) => const ParentalDialog(),
-                                        );
-                                      },
-                                    ),
-                                  );
-                                },
-                              ),
-                            );
-                          },
-                        ),
-
-                        if (activeProfile != null)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                            child: TvFocusable(
-                              borderRadius: BorderRadius.circular(8),
-                              onPressed: catalogProvider.isLoading
-                                  ? null
-                                  : () {
-                                      catalogProvider.loadCatalog(activeProfile);
-                                      context.read<EpgProvider>().loadEpg(activeProfile, forceRefresh: true);
-                                    },
-                              builder: (context, isFocused, isHovered) {
-                                return Container(
-                                  decoration: BoxDecoration(
-                                    color: isFocused ? AppTheme.primary.withValues(alpha: 0.1) : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: ListTile(
-                                    dense: true,
-                                    leading: const Icon(Icons.refresh, color: AppTheme.textSecondary, size: 20),
-                                    title: Text(l10n.reloadList, style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
-                                    onTap: catalogProvider.isLoading
-                                        ? null
-                                        : () {
-                                            catalogProvider.loadCatalog(activeProfile);
-                                            context.read<EpgProvider>().loadEpg(activeProfile, forceRefresh: true);
-                                          },
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                          child: TvFocusable(
-                            borderRadius: BorderRadius.circular(8),
-                            onPressed: () {
-                              showDialog(
-                                context: context,
-                                builder: (_) => const AddProfileDialog(),
-                              );
-                            },
-                            builder: (context, isFocused, isHovered) {
-                              return Container(
-                                decoration: BoxDecoration(
-                                  color: isFocused ? AppTheme.primary.withValues(alpha: 0.15) : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: ListTile(
-                                  dense: true,
-                                  leading: const Icon(Icons.playlist_add, color: AppTheme.primary, size: 20),
-                                  title: Text(
-                                    l10n.addList,
-                                    style: const TextStyle(fontSize: 13, color: AppTheme.primary, fontWeight: FontWeight.bold),
-                                  ),
-                                  onTap: () {
-                                    showDialog(
-                                      context: context,
-                                      builder: (_) => const AddProfileDialog(),
-                                    );
-                                  },
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                          child: TvFocusable(
-                            borderRadius: BorderRadius.circular(8),
-                            onPressed: _toggleFullScreen,
-                            builder: (context, isFocused, isHovered) {
-                              return Container(
-                                decoration: BoxDecoration(
-                                  color: isFocused ? AppTheme.primary.withValues(alpha: 0.1) : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: ListTile(
-                                  dense: true,
-                                  leading: Icon(
-                                    _isFullScreen ? Icons.fullscreen_exit : Icons.fullscreen,
-                                    color: AppTheme.textSecondary,
-                                    size: 20,
-                                  ),
-                                  title: Text(
-                                    _isFullScreen ? l10n.exitFullscreen : l10n.fullscreen,
-                                    style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
-                                  ),
-                                  onTap: _toggleFullScreen,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 12),
+                        _buildFullscreenItem(l10n),
+                        const SizedBox(height: 8),
                       ],
                     ),
                   ),
                 ),
-
                 const VerticalDivider(width: 1, color: AppTheme.border),
 
-                // Main View Content
                 Expanded(
                   child: _buildBody(activeProfile, catalogProvider),
                 ),
@@ -668,21 +480,55 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
     final isSelected = _selectedIndex == index;
 
     return TvFocusable(
-      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      margin: EdgeInsets.symmetric(
+        horizontal: _isSidebarExpanded ? 10 : 8,
+        vertical: 2,
+      ),
       borderRadius: BorderRadius.circular(10),
       onPressed: () => setState(() => _selectedIndex = index),
       builder: (context, isFocused, isHovered) {
         final activeColor = isFocused || isSelected ? AppTheme.primary : AppTheme.textSecondary;
+        final decoration = BoxDecoration(
+          color: isSelected
+              ? AppTheme.surfaceLight
+              : (isFocused ? AppTheme.primary.withValues(alpha: 0.1) : Colors.transparent),
+          borderRadius: BorderRadius.circular(10),
+          border: isSelected && !isFocused
+              ? Border.all(color: AppTheme.primary.withValues(alpha: 0.5))
+              : null,
+        );
+
+        if (!_isSidebarExpanded) {
+          return Tooltip(
+            message: title,
+            child: Container(
+              height: 44,
+              decoration: decoration,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Icon(icon, color: activeColor, size: 22),
+                  if (badge.isNotEmpty && badge != '0')
+                    Positioned(
+                      top: 6,
+                      right: 6,
+                      child: Container(
+                        width: 7,
+                        height: 7,
+                        decoration: const BoxDecoration(
+                          color: AppTheme.primary,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+        }
+
         return Container(
-          decoration: BoxDecoration(
-            color: isSelected
-                ? AppTheme.surfaceLight
-                : (isFocused ? AppTheme.primary.withValues(alpha: 0.1) : Colors.transparent),
-            borderRadius: BorderRadius.circular(10),
-            border: isSelected && !isFocused
-                ? Border.all(color: AppTheme.primary.withValues(alpha: 0.5))
-                : null,
-          ),
+          decoration: decoration,
           child: Material(
             color: Colors.transparent,
             child: ListTile(
@@ -696,26 +542,86 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
                   fontSize: 13,
                 ),
               ),
-              trailing: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: isSelected ? AppTheme.primary.withValues(alpha: 0.15) : AppTheme.surfaceLight,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  badge,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: isFocused || isSelected ? AppTheme.primary : AppTheme.textMuted,
-                    fontWeight: isFocused || isSelected ? FontWeight.bold : FontWeight.normal,
-                  ),
-                ),
-              ),
+              trailing: badge.isNotEmpty && badge != '0'
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: isSelected ? AppTheme.primary.withValues(alpha: 0.15) : AppTheme.surfaceLight,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        badge,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isFocused || isSelected ? AppTheme.primary : AppTheme.textMuted,
+                          fontWeight: isFocused || isSelected ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    )
+                  : null,
               onTap: () => setState(() => _selectedIndex = index),
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildFullscreenItem(AppLocalizations l10n) {
+    if (!_isSidebarExpanded) {
+      return TvFocusable(
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        borderRadius: BorderRadius.circular(10),
+        onPressed: _toggleFullScreen,
+        builder: (context, isFocused, isHovered) {
+          return Tooltip(
+            message: _isFullScreen ? l10n.exitFullscreen : l10n.fullscreen,
+            child: Container(
+              height: 44,
+              decoration: BoxDecoration(
+                color: isFocused ? AppTheme.primary.withValues(alpha: 0.1) : Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Center(
+                child: Icon(
+                  _isFullScreen ? Icons.fullscreen_exit : Icons.fullscreen,
+                  color: AppTheme.textSecondary,
+                  size: 20,
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      child: TvFocusable(
+        borderRadius: BorderRadius.circular(8),
+        onPressed: _toggleFullScreen,
+        builder: (context, isFocused, isHovered) {
+          return Container(
+            decoration: BoxDecoration(
+              color: isFocused ? AppTheme.primary.withValues(alpha: 0.1) : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: ListTile(
+              dense: true,
+              leading: Icon(
+                _isFullScreen ? Icons.fullscreen_exit : Icons.fullscreen,
+                color: AppTheme.textSecondary,
+                size: 20,
+              ),
+              title: Text(
+                _isFullScreen ? l10n.exitFullscreen : l10n.fullscreen,
+                style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+              ),
+              onTap: _toggleFullScreen,
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -726,7 +632,7 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
       return const DownloadsScreen();
     }
     if (_selectedIndex == 5) {
-      return const LogsScreen();
+      return const SettingsScreen();
     }
 
     if (activeProfile == null) {
@@ -840,7 +746,7 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
       case 4:
         return const DownloadsScreen();
       case 5:
-        return const LogsScreen();
+        return const SettingsScreen();
       default:
         return HomeHubScreen(
           onNavigateToLive: () => setState(() => _selectedIndex = 1),

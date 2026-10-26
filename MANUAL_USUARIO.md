@@ -42,7 +42,7 @@ flowchart LR
 
 Al abrir la aplicación por primera vez, verás la opción de vincular tu proveedor:
 
-1. Pulsa en el botón **`+ Añadir lista`** situado en la barra lateral izquierda (o pulsa sobre la tarjeta del perfil activo).
+1. Pulsa en la sección **Configuración** en la barra lateral izquierda (o pulsa sobre la tarjeta del perfil activo) y selecciona **+ Añadir Lista**.
 2. Elige el formato que te haya proporcionado tu proveedor IPTV:
 
 ```
@@ -72,8 +72,10 @@ Al abrir la aplicación por primera vez, verás la opción de vincular tu provee
    * **Continuar Viendo:** Retoma películas y series con barra de progreso y minutos restantes.
    * **Canales Favoritos:** Vista previa con el programa que se está emitiendo en directo ahora mismo.
    * **Recordatorios de Emisión:** Próximos programas agendados con cuenta atrás.
-2. **TV en Directo:**
+2. **TV en Directo y Espacio Maximizado:**
    * Organiza canales por categorías, favoritos o recientes.
+   * **Ocultar/Mostrar Menú Izquierdo:** Pulsa el icono colapsar (`Icons.menu_open`) en la parte superior del menú o el botón flotante `Menú` para ver más contenido en pantalla.
+   * **Ocultar/Mostrar Submenú de Categorías:** Pulsa el botón de panel lateral (`<` / icono de barra lateral) en la cabecera para ocultar el listado de categorías y expandir la cuadrícula de canales a pantalla completa.
    * **Búsqueda por Voz:** Pulsa el icono de micrófono para dictar títulos o géneros con el mando.
    * Pulsa cualquier canal para reproducirlo a pantalla completa.
 

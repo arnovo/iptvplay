@@ -103,6 +103,10 @@
 - Modos de relación de aspecto: *Ajustar (contain)*, *Rellenar (cover)*, *Estirar (fill)*, *16:9* y *4:3*.
 - Pantalla completa nativa con tecla `F` / doble toque o botón en la barra superior.
 
+### ⚙️ 17. Panel Unificado de Configuración y Menús Colapsables
+- **Centro de Configuración Centralizado:** Gestión integral de listas y perfiles, control parental con PIN, visor de logs, copias de seguridad AES-256, cambio de idioma y perfil de buffer de reproducción en una única vista organizada.
+- **Menú Lateral y Submenú Colapsables:** Opción de ocultar/mostrar tanto la barra de navegación izquierda como la barra de subcategorías con un toque o botón de mando a distancia, maximizando el espacio de visualización de canales, películas y series.
+
 ---
 
 ## 🔒 Privacidad y Seguridad
