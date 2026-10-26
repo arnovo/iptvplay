@@ -60,6 +60,97 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
       context.read<CatalogProvider>().loadCatalog(profileProvider.activeProfile!);
       context.read<EpgProvider>().loadEpg(profileProvider.activeProfile!);
     }
+    if (mounted) {
+      _checkPausedDownloadsOnStartup();
+    }
+  }
+
+  Future<void> _checkPausedDownloadsOnStartup() async {
+    final downloadProvider = context.read<DownloadProvider>();
+    if (!downloadProvider.isInitialized) {
+      await downloadProvider.initialized;
+    }
+    if (!mounted) return;
+
+    final paused = downloadProvider.pausedDownloads;
+    if (paused.isEmpty) return;
+
+    final title = paused.length == 1
+        ? 'Reanudar descarga pausada'
+        : 'Reanudar descargas pausadas';
+
+    final message = paused.length == 1
+        ? 'Se ha detectado una descarga incompleta:\n"${paused.first.title}"\n\n¿Deseas reanudarla ahora desde donde se quedó?'
+        : 'Se han detectado ${paused.length} descargas incompletas:\n${paused.take(3).map((e) => '• ${e.title}').join('\n')}${paused.length > 3 ? '\n• ...' : ''}\n\n¿Deseas reanudarlas ahora?';
+
+    final shouldResume = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppTheme.border),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.accentYellow.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.pause_circle_outline, color: AppTheme.accentYellow, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          message,
+          style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Más tarde', style: TextStyle(color: AppTheme.textMuted)),
+          ),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primary,
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            icon: const Icon(Icons.play_arrow, size: 18),
+            label: Text(paused.length == 1 ? 'Reanudar' : 'Reanudar todas'),
+            onPressed: () => Navigator.of(ctx).pop(true),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldResume == true && mounted) {
+      await downloadProvider.resumeAllPaused();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppTheme.surface,
+            content: Text(
+              paused.length == 1
+                  ? 'Reanudando descarga de "${paused.first.title}"...'
+                  : 'Reanudando ${paused.length} descargas...',
+              style: const TextStyle(color: AppTheme.primary),
+            ),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   @override

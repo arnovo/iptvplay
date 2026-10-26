@@ -19,7 +19,6 @@ class LanStreamDialog extends StatefulWidget {
 }
 
 class _LanStreamDialogState extends State<LanStreamDialog> {
-  bool _isCopiedWeb = false;
   bool _isCopiedStream = false;
 
   @override
@@ -36,23 +35,15 @@ class _LanStreamDialogState extends State<LanStreamDialog> {
     });
   }
 
-  void _copyToClipboard(String url, bool isWeb) {
+  void _copyToClipboard(String url) {
     Clipboard.setData(ClipboardData(text: url));
     setState(() {
-      if (isWeb) {
-        _isCopiedWeb = true;
-      } else {
-        _isCopiedStream = true;
-      }
+      _isCopiedStream = true;
     });
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
         setState(() {
-          if (isWeb) {
-            _isCopiedWeb = false;
-          } else {
-            _isCopiedStream = false;
-          }
+          _isCopiedStream = false;
         });
       }
     });
@@ -62,7 +53,6 @@ class _LanStreamDialogState extends State<LanStreamDialog> {
   Widget build(BuildContext context) {
     final serverProvider = context.watch<StreamServerProvider>();
     final isRunning = serverProvider.isRunning;
-    final webUrl = serverProvider.webPlayerUrl ?? 'http://127.0.0.1:8088/';
     final rawUrl = serverProvider.rawStreamUrl ?? 'http://127.0.0.1:8088/stream.ts';
     final clients = serverProvider.clientCount;
 
@@ -157,102 +147,26 @@ class _LanStreamDialogState extends State<LanStreamDialog> {
               ),
               const SizedBox(height: 18),
 
-              // Card 1: Web Player (Browser)
+              // Stream URL Card (stream.ts)
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   color: AppTheme.background,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppTheme.primary.withValues(alpha: 0.4)),
+                  border: Border.all(color: AppTheme.primary.withValues(alpha: 0.5)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: const [
-                        Icon(Icons.language, color: AppTheme.primary, size: 18),
+                        Icon(Icons.tv, color: AppTheme.primary, size: 20),
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            '1. Navegador Web (Chrome, Safari, Móvil, PC)',
+                            'Enlace de Flujo Continuo (stream.ts)',
                             style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.primary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: AppTheme.surface,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppTheme.border),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: SelectableText(
-                              webUrl,
-                              style: const TextStyle(
-                                fontFamily: 'monospace',
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _isCopiedWeb ? AppTheme.accentGreen : AppTheme.primary,
-                              foregroundColor: Colors.black,
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            ),
-                            icon: Icon(_isCopiedWeb ? Icons.check : Icons.copy, size: 14),
-                            label: Text(
-                              _isCopiedWeb ? 'Copiado' : 'Copiar',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                            ),
-                            onPressed: isRunning ? () => _copyToClipboard(webUrl, true) : null,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      '✨ Abre esta URL en cualquier navegador para ver el reproductor web integrado sin descargar ningún archivo.',
-                      style: TextStyle(color: AppTheme.textMuted, fontSize: 11),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
-
-              // Card 2: External Player (VLC / Smart TV)
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppTheme.surfaceLight,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppTheme.border),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: const [
-                        Icon(Icons.tv, color: Colors.white, size: 18),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            '2. Reproductores Externos (VLC, Smart TV, Kodi)',
-                            style: TextStyle(
-                              fontSize: 13,
+                              fontSize: 14,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
@@ -260,11 +174,11 @@ class _LanStreamDialogState extends State<LanStreamDialog> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       decoration: BoxDecoration(
-                        color: AppTheme.background,
+                        color: AppTheme.surface,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(color: AppTheme.border),
                       ),
@@ -276,32 +190,33 @@ class _LanStreamDialogState extends State<LanStreamDialog> {
                               style: const TextStyle(
                                 fontFamily: 'monospace',
                                 fontSize: 13,
-                                color: AppTheme.textSecondary,
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.primary,
                               ),
                             ),
                           ),
                           const SizedBox(width: 10),
-                          OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: _isCopiedStream ? AppTheme.accentGreen : Colors.white,
-                              side: BorderSide(color: _isCopiedStream ? AppTheme.accentGreen : AppTheme.border),
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _isCopiedStream ? AppTheme.accentGreen : AppTheme.primary,
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
-                            icon: Icon(_isCopiedStream ? Icons.check : Icons.copy, size: 14),
+                            icon: Icon(_isCopiedStream ? Icons.check : Icons.copy, size: 15),
                             label: Text(
-                              _isCopiedStream ? 'Copiado' : 'Copiar',
+                              _isCopiedStream ? '¡Copiado!' : 'Copiar URL',
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                             ),
-                            onPressed: isRunning ? () => _copyToClipboard(rawUrl, false) : null,
+                            onPressed: isRunning ? () => _copyToClipboard(rawUrl) : null,
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     const Text(
-                      '📺 Pega este enlace en "Abrir red" de VLC o en aplicaciones IPTV de Smart TV (TiviMate, SS IPTV, etc.).',
-                      style: TextStyle(color: AppTheme.textMuted, fontSize: 11),
+                      '📺 Reproducción nativa en VLC ("Abrir red"), Smart TV (TiviMate, SS IPTV), Kodi, Infuse o cualquier reproductor en tu red local con audio y vídeo completos.',
+                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 12, height: 1.4),
                     ),
                   ],
                 ),

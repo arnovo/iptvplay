@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../models/download_item.dart';
@@ -7,12 +8,18 @@ class DownloadProvider extends ChangeNotifier {
   final DownloadService _service = DownloadService();
   List<DownloadItem> _items = [];
   bool _isInitialized = false;
+  final Completer<void> _initCompleter = Completer<void>();
+
+  bool get isInitialized => _isInitialized;
+  Future<void> get initialized => _initCompleter.future;
 
   List<DownloadItem> get items => _items;
   List<DownloadItem> get completedItems =>
       _items.where((i) => i.status == DownloadStatus.completed).toList();
   List<DownloadItem> get activeRecordings =>
       _items.where((i) => i.status == DownloadStatus.recording).toList();
+  List<DownloadItem> get pausedDownloads =>
+      _items.where((i) => i.status == DownloadStatus.paused).toList();
 
   DownloadProvider() {
     _init();
@@ -60,7 +67,17 @@ class DownloadProvider extends ChangeNotifier {
       await _service.saveDownloadsMetadata(_items);
     }
     _isInitialized = true;
+    if (!_initCompleter.isCompleted) {
+      _initCompleter.complete();
+    }
     notifyListeners();
+  }
+
+  Future<void> resumeAllPaused() async {
+    final paused = List<DownloadItem>.from(pausedDownloads);
+    for (final item in paused) {
+      await resumeDownload(item.id);
+    }
   }
 
   bool isChannelRecording(String channelId) {
