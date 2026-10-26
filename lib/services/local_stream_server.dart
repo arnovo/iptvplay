@@ -742,7 +742,56 @@ class LocalStreamServer {
     const isM3u8 = ${isM3u8 ? 'true' : 'false'};
     let mpegPlayer = null;
     let hlsPlayer = null;
-    let fallbackToVideoOnlyTried = false;
+    let isCleaningUp = false;
+
+    // Safeguard MediaSource against audio formats unsupported in Chrome/Edge MSE (e.g. audio/mpeg, mp2, mp3)
+    if (typeof MediaSource !== 'undefined' && MediaSource.prototype.addSourceBuffer) {
+      const nativeAddSourceBuffer = MediaSource.prototype.addSourceBuffer;
+      MediaSource.prototype.addSourceBuffer = function(type) {
+        const isUnsupportedAudio = type.startsWith('audio/') && (
+          type.includes('mpeg') ||
+          type.includes('mp3') ||
+          type.includes('layer') ||
+          !MediaSource.isTypeSupported(type)
+        );
+
+        if (isUnsupportedAudio) {
+          console.warn('MediaSource: audio format not supported by browser MSE (' + type + '). Discarding audio track for smooth video playback.');
+          if (audioNotice) audioNotice.style.display = 'block';
+
+          // Safe mock SourceBuffer that consumes audio chunks without breaking the pipeline or HTMLMediaElement
+          const mockSB = new EventTarget();
+          mockSB.updating = false;
+          mockSB.buffered = {
+            length: 0,
+            start: () => 0,
+            end: () => 0,
+          };
+          mockSB.appendBuffer = function() {
+            mockSB.updating = true;
+            setTimeout(() => {
+              mockSB.updating = false;
+              mockSB.dispatchEvent(new Event('update'));
+              mockSB.dispatchEvent(new Event('updateend'));
+            }, 0);
+          };
+          mockSB.remove = function() {
+            mockSB.updating = true;
+            setTimeout(() => {
+              mockSB.updating = false;
+              mockSB.dispatchEvent(new Event('update'));
+              mockSB.dispatchEvent(new Event('updateend'));
+            }, 0);
+          };
+          mockSB.abort = function() {
+            mockSB.updating = false;
+          };
+          return mockSB;
+        }
+
+        return nativeAddSourceBuffer.call(this, type);
+      };
+    }
 
     function setStatus(text, isError = false) {
       if (!statusBadge) return;
@@ -751,12 +800,38 @@ class LocalStreamServer {
       statusBadge.style.borderColor = isError ? 'rgba(239, 68, 68, 0.5)' : 'rgba(0, 229, 255, 0.3)';
     }
 
+    function cleanupPlayer() {
+      isCleaningUp = true;
+      if (mpegPlayer) {
+        try {
+          mpegPlayer.pause();
+          mpegPlayer.unload();
+          mpegPlayer.detachMediaElement();
+          mpegPlayer.destroy();
+        } catch (_) {}
+        mpegPlayer = null;
+      }
+      if (hlsPlayer) {
+        try {
+          hlsPlayer.destroy();
+        } catch (_) {}
+        hlsPlayer = null;
+      }
+      try {
+        video.pause();
+        video.removeAttribute('src');
+        video.load();
+      } catch (_) {}
+      isCleaningUp = false;
+    }
+
     function initPlayer() {
+      cleanupPlayer();
       setStatus('Conectando al flujo...');
 
       if (isM3u8) {
         if (typeof Hls !== 'undefined' && Hls.isSupported()) {
-          hlsPlayer = new Hls({ enableWorker: true, lowLatencyMode: true });
+          hlsPlayer = new Hls({ enableWorker: false, lowLatencyMode: true });
           hlsPlayer.loadSource(streamUrl);
           hlsPlayer.attachMedia(video);
           hlsPlayer.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -764,7 +839,7 @@ class LocalStreamServer {
             attemptPlay();
           });
           hlsPlayer.on(Hls.Events.ERROR, (event, data) => {
-            if (data.fatal) {
+            if (data.fatal && !isCleaningUp) {
               setStatus('Reconectando flujo HLS...', true);
               hlsPlayer.startLoad();
             }
@@ -777,11 +852,10 @@ class LocalStreamServer {
         }
       }
 
-      // Start MPEG-TS player (with auto-fallback to video-only if audio codec is unsupported by MSE)
-      startMpegts(true);
+      startMpegts();
     }
 
-    function startMpegts(enableAudio) {
+    function startMpegts() {
       if (typeof mpegts === 'undefined' || !mpegts.getFeatureList().mseLivePlayback) {
         // Native fallback (Safari / iOS)
         video.src = streamUrl;
@@ -789,20 +863,15 @@ class LocalStreamServer {
         return;
       }
 
-      if (mpegPlayer) {
-        try { mpegPlayer.destroy(); } catch (_) {}
-        mpegPlayer = null;
-      }
-
       try {
         mpegPlayer = mpegts.createPlayer({
           type: 'm2ts',
           isLive: true,
           url: streamUrl,
-          hasAudio: enableAudio,
+          hasAudio: true,
           hasVideo: true,
         }, {
-          enableWorker: true,
+          enableWorker: false,
           lazyLoad: false,
           stashInitialSize: 256,
           liveBufferLatencyChasing: true,
@@ -815,18 +884,14 @@ class LocalStreamServer {
         attemptPlay();
 
         mpegPlayer.on(mpegts.Events.ERROR, (type, detail) => {
+          if (isCleaningUp) return;
           console.warn('mpegts error:', type, detail);
-          // If browser MSE rejects the audio format (common with European TV MP2 audio)
-          if (enableAudio && !fallbackToVideoOnlyTried && 
-              (detail === 'MediaMSEError' || type === 'MediaError')) {
-            fallbackToVideoOnlyTried = true;
-            console.log('Falling back to video-only in browser MSE');
+          if (detail === 'MediaMSEError' || type === 'MediaError') {
             if (audioNotice) audioNotice.style.display = 'block';
-            setStatus('Audio MPEG-2 no soportado en web • Vídeo en directo', false);
-            startMpegts(false);
-            return;
+            setStatus('Vídeo en directo (Audio satélite: abre en VLC)', false);
+          } else {
+            setStatus('Reconectando...', true);
           }
-          setStatus('Reconectando...', true);
         });
 
         mpegPlayer.on(mpegts.Events.MEDIA_INFO, (info) => {
@@ -835,10 +900,7 @@ class LocalStreamServer {
         });
       } catch (e) {
         console.error('Failed to create mpegts player:', e);
-        if (enableAudio && !fallbackToVideoOnlyTried) {
-          fallbackToVideoOnlyTried = true;
-          startMpegts(false);
-        }
+        setStatus('Error al inicializar reproductor', true);
       }
     }
 
@@ -867,16 +929,7 @@ class LocalStreamServer {
     };
 
     function reloadPlayer() {
-      fallbackToVideoOnlyTried = false;
       if (audioNotice) audioNotice.style.display = 'none';
-      if (mpegPlayer) {
-        try { mpegPlayer.destroy(); } catch (_) {}
-        mpegPlayer = null;
-      }
-      if (hlsPlayer) {
-        try { hlsPlayer.destroy(); } catch (_) {}
-        hlsPlayer = null;
-      }
       initPlayer();
     }
 
