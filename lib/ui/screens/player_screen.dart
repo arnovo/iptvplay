@@ -143,6 +143,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
         if (mounted) setState(() => _isBuffering = buffering);
       });
 
+      _player.stream.tracks.listen((_) {
+        if (mounted) setState(() {});
+      });
+
       _player.stream.error.listen((error) {
         if (mounted && error.isNotEmpty) {
           LogService.instance.error(
@@ -356,6 +360,67 @@ class _PlayerScreenState extends State<PlayerScreen> {
     _startControlsTimer();
   }
 
+  String _formatLanguageCode(String? code, String fallback) {
+    if (code == null || code.isEmpty) return fallback;
+    final lower = code.toLowerCase();
+    switch (lower) {
+      case 'spa':
+      case 'es':
+        return 'Español';
+      case 'eng':
+      case 'en':
+        return 'Inglés';
+      case 'fre':
+      case 'fra':
+      case 'fr':
+        return 'Francés';
+      case 'ger':
+      case 'deu':
+      case 'de':
+        return 'Alemán';
+      case 'ita':
+      case 'it':
+        return 'Italiano';
+      case 'por':
+      case 'pt':
+        return 'Portugués';
+      case 'ara':
+      case 'ar':
+        return 'Árabe';
+      case 'rus':
+      case 'ru':
+        return 'Ruso';
+      case 'jpn':
+      case 'ja':
+        return 'Japonés';
+      case 'chi':
+      case 'zho':
+      case 'zh':
+        return 'Chino';
+      case 'dut':
+      case 'nld':
+      case 'nl':
+        return 'Holandés';
+      case 'pol':
+      case 'pl':
+        return 'Polaco';
+      case 'dan':
+      case 'da':
+        return 'Danés';
+      case 'swe':
+      case 'sv':
+        return 'Sueco';
+      case 'nor':
+      case 'no':
+        return 'Noruego';
+      case 'fin':
+      case 'fi':
+        return 'Finlandés';
+      default:
+        return code.toUpperCase();
+    }
+  }
+
   void _showAudioTracksDialog() {
     final tracks = _player.state.tracks.audio;
     final current = _player.state.track.audio;
@@ -363,52 +428,89 @@ class _PlayerScreenState extends State<PlayerScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppTheme.surface,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (ctx) {
-        return Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Row(
-                children: [
-                  Icon(Icons.audiotrack, color: AppTheme.primary),
-                  SizedBox(width: 10),
-                  Text(
-                    'Pistas de Audio',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              if (tracks.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Text('No hay pistas adicionales disponibles', style: TextStyle(color: AppTheme.textMuted)),
-                )
-              else
-                ...tracks.map((track) {
-                  final isSelected = current == track;
-                  return ListTile(
-                    dense: true,
-                    title: Text(
-                      track.title?.isNotEmpty == true ? track.title! : track.language?.isNotEmpty == true ? track.language! : 'Pista ${track.id}',
-                      style: TextStyle(
-                        color: isSelected ? AppTheme.primary : AppTheme.textPrimary,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        return ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.7,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.audiotrack, color: AppTheme.primary),
+                    const SizedBox(width: 10),
+                    const Text(
+                      'Pistas de Audio',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primary.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '${tracks.length} disponible(s)',
+                        style: const TextStyle(color: AppTheme.primary, fontSize: 11, fontWeight: FontWeight.bold),
                       ),
                     ),
-                    trailing: isSelected ? const Icon(Icons.check, color: AppTheme.primary) : null,
-                    onTap: () {
-                      _player.setAudioTrack(track);
-                      Navigator.of(ctx).pop();
-                    },
-                  );
-                }),
-            ],
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (tracks.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: Text('No hay pistas adicionales disponibles', style: TextStyle(color: AppTheme.textMuted)),
+                    ),
+                  )
+                else
+                  Flexible(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: tracks.length,
+                      separatorBuilder: (_, _) => const Divider(color: AppTheme.border, height: 1),
+                      itemBuilder: (context, index) {
+                        final track = tracks[index];
+                        final isSelected = current == track;
+                        final langName = _formatLanguageCode(track.language, 'Pista ${track.id}');
+                        final label = track.title?.isNotEmpty == true
+                            ? '${track.title!} ($langName)'
+                            : langName;
+
+                        return Material(
+                          color: Colors.transparent,
+                          child: ListTile(
+                            dense: true,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                            title: Text(
+                              label,
+                              style: TextStyle(
+                                color: isSelected ? AppTheme.primary : AppTheme.textPrimary,
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
+                            trailing: isSelected ? const Icon(Icons.check, color: AppTheme.primary) : null,
+                            onTap: () {
+                              _player.setAudioTrack(track);
+                              Navigator.of(ctx).pop();
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
           ),
         );
       },
@@ -422,61 +524,109 @@ class _PlayerScreenState extends State<PlayerScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppTheme.surface,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (ctx) {
-        return Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Row(
-                children: [
-                  Icon(Icons.subtitles, color: AppTheme.primary),
-                  SizedBox(width: 10),
-                  Text(
-                    'Subtítulos',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              ListTile(
-                dense: true,
-                title: Text(
-                  'Desactivados',
-                  style: TextStyle(
-                    color: current == SubtitleTrack.no() ? AppTheme.primary : AppTheme.textPrimary,
-                    fontWeight: current == SubtitleTrack.no() ? FontWeight.bold : FontWeight.normal,
+        return ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.7,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.subtitles, color: AppTheme.primary),
+                    const SizedBox(width: 10),
+                    const Text(
+                      'Subtítulos',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primary.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '${tracks.length} idioma(s)',
+                        style: const TextStyle(color: AppTheme.primary, fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Material(
+                  color: Colors.transparent,
+                  child: ListTile(
+                    dense: true,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                    title: Text(
+                      'Desactivados',
+                      style: TextStyle(
+                        color: current == SubtitleTrack.no() ? AppTheme.primary : AppTheme.textPrimary,
+                        fontWeight: current == SubtitleTrack.no() ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                    trailing: current == SubtitleTrack.no() ? const Icon(Icons.check, color: AppTheme.primary) : null,
+                    onTap: () {
+                      _player.setSubtitleTrack(SubtitleTrack.no());
+                      Navigator.of(ctx).pop();
+                    },
                   ),
                 ),
-                trailing: current == SubtitleTrack.no() ? const Icon(Icons.check, color: AppTheme.primary) : null,
-                onTap: () {
-                  _player.setSubtitleTrack(SubtitleTrack.no());
-                  Navigator.of(ctx).pop();
-                },
-              ),
-              ...tracks.map((track) {
-                final isSelected = current == track;
-                return ListTile(
-                  dense: true,
-                  title: Text(
-                    track.title?.isNotEmpty == true ? track.title! : track.language?.isNotEmpty == true ? track.language! : 'Subtítulo ${track.id}',
-                    style: TextStyle(
-                      color: isSelected ? AppTheme.primary : AppTheme.textPrimary,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                const Divider(color: AppTheme.border, height: 1),
+                if (tracks.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: Text('No hay subtítulos disponibles', style: TextStyle(color: AppTheme.textMuted)),
+                    ),
+                  )
+                else
+                  Flexible(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: tracks.length,
+                      separatorBuilder: (_, _) => const Divider(color: AppTheme.border, height: 1),
+                      itemBuilder: (context, index) {
+                        final track = tracks[index];
+                        final isSelected = current == track;
+                        final langName = _formatLanguageCode(track.language, 'Subtítulo ${track.id}');
+                        final label = track.title?.isNotEmpty == true
+                            ? '${track.title!} ($langName)'
+                            : langName;
+
+                        return Material(
+                          color: Colors.transparent,
+                          child: ListTile(
+                            dense: true,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                            title: Text(
+                              label,
+                              style: TextStyle(
+                                color: isSelected ? AppTheme.primary : AppTheme.textPrimary,
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
+                            trailing: isSelected ? const Icon(Icons.check, color: AppTheme.primary) : null,
+                            onTap: () {
+                              _player.setSubtitleTrack(track);
+                              Navigator.of(ctx).pop();
+                            },
+                          ),
+                        );
+                      },
                     ),
                   ),
-                  trailing: isSelected ? const Icon(Icons.check, color: AppTheme.primary) : null,
-                  onTap: () {
-                    _player.setSubtitleTrack(track);
-                    Navigator.of(ctx).pop();
-                  },
-                );
-              }),
-            ],
+              ],
+            ),
           ),
         );
       },
@@ -816,9 +966,14 @@ class _PlayerScreenState extends State<PlayerScreen> {
                             color: isDownloaded ? AppTheme.accentGreen : Colors.white,
                             size: 22,
                           ),
-                          tooltip: isDownloaded ? 'Descargado localmente' : 'Descargar para ver sin conexión',
+                          tooltip: isDownloaded ? 'Descargado (clic para abrir carpeta)' : 'Descargar para ver sin conexión',
                           onPressed: isDownloaded
-                              ? null
+                              ? () {
+                                  final item = downloads.completedItems.where((i) => i.id == widget.contentId).firstOrNull;
+                                  if (item != null) {
+                                    downloads.openItemInFileManager(item);
+                                  }
+                                }
                               : () {
                                   downloads.startVodDownload(
                                     id: widget.contentId!,

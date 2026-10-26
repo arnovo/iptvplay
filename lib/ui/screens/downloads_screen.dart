@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/download_item.dart';
@@ -77,6 +78,83 @@ class DownloadsScreen extends StatelessWidget {
                       ],
                     ),
                   ),
+              ],
+            ),
+          ),
+
+          // Storage Location Bar
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            decoration: const BoxDecoration(
+              color: AppTheme.surfaceLight,
+              border: Border(bottom: BorderSide(color: AppTheme.border)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.folder_outlined, size: 18, color: AppTheme.textSecondary),
+                const SizedBox(width: 8),
+                const Text(
+                  'Carpeta: ',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppTheme.textSecondary),
+                ),
+                Expanded(
+                  child: Text(
+                    downloadProvider.currentStoragePath ?? 'Cargando carpeta...',
+                    style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                TextButton.icon(
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    foregroundColor: AppTheme.primary,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  ),
+                  icon: const Icon(Icons.folder_open, size: 16),
+                  label: const Text('Abrir carpeta', style: TextStyle(fontSize: 12)),
+                  onPressed: () => downloadProvider.openStorageDirectory(),
+                ),
+                const SizedBox(width: 6),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    foregroundColor: AppTheme.textPrimary,
+                    side: const BorderSide(color: AppTheme.border),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  ),
+                  icon: const Icon(Icons.edit_outlined, size: 15),
+                  label: const Text('Cambiar', style: TextStyle(fontSize: 12)),
+                  onPressed: () async {
+                    final selected = await FilePicker.getDirectoryPath(
+                      dialogTitle: 'Seleccionar carpeta para descargas',
+                    );
+                    if (selected != null && context.mounted) {
+                      await downloadProvider.changeStorageDirectory(selected);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Carpeta de descargas cambiada a: $selected')),
+                        );
+                      }
+                    }
+                  },
+                ),
+                if (downloadProvider.hasCustomStoragePath) ...[
+                  const SizedBox(width: 6),
+                  IconButton(
+                    icon: const Icon(Icons.restore, size: 18, color: AppTheme.textMuted),
+                    tooltip: 'Restablecer carpeta por defecto',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () async {
+                      await downloadProvider.resetStorageDirectory();
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Carpeta restablecida a la predeterminada')),
+                        );
+                      }
+                    },
+                  ),
+                ],
               ],
             ),
           ),
@@ -364,6 +442,14 @@ class DownloadsScreen extends StatelessWidget {
                                     },
                                   ),
                                   const SizedBox(width: 8),
+                                  IconButton(
+                                    icon: const Icon(Icons.folder_open, color: AppTheme.textSecondary, size: 20),
+                                    tooltip: 'Abrir en carpeta',
+                                    onPressed: () {
+                                      downloadProvider.openItemInFileManager(item);
+                                    },
+                                  ),
+                                  const SizedBox(width: 4),
                                   IconButton(
                                     icon: const Icon(Icons.delete_outline, color: AppTheme.textMuted, size: 20),
                                     tooltip: 'Eliminar descarga',

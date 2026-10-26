@@ -47,7 +47,10 @@ class _MediaDetailSheetState extends State<MediaDetailSheet> {
     final userActivity = context.watch<UserActivityProvider>();
     final downloadProvider = context.watch<DownloadProvider>();
     final isFav = userActivity.isFavorite(widget.vod.id, 'vod');
-    final isDownloaded = downloadProvider.completedItems.any((i) => i.id == widget.vod.id);
+    final downloadedItem = downloadProvider.completedItems
+        .where((i) => i.id == widget.vod.id)
+        .firstOrNull;
+    final isDownloaded = downloadedItem != null;
 
     final poster = _metadata?.fullPosterUrl ?? widget.vod.posterUrl;
     final backdrop = _metadata?.fullBackdropUrl ?? widget.vod.posterUrl;
@@ -223,8 +226,10 @@ class _MediaDetailSheetState extends State<MediaDetailSheet> {
                           ),
                           const SizedBox(height: 20),
 
-                          // Actions Row
-                          Row(
+                          // Actions
+                          Wrap(
+                            spacing: 12,
+                            runSpacing: 10,
                             children: [
                               ElevatedButton.icon(
                                 style: ElevatedButton.styleFrom(
@@ -243,7 +248,9 @@ class _MediaDetailSheetState extends State<MediaDetailSheet> {
                                   Navigator.of(context).push(
                                     MaterialPageRoute(
                                       builder: (_) => PlayerScreen(
-                                        streamUrl: widget.vod.url,
+                                        streamUrl: downloadedItem != null
+                                            ? downloadedItem.localFilePath
+                                            : widget.vod.url,
                                         title: widget.vod.name,
                                         isLive: false,
                                         contentId: widget.vod.id,
@@ -255,7 +262,6 @@ class _MediaDetailSheetState extends State<MediaDetailSheet> {
                                   );
                                 },
                               ),
-                              const SizedBox(width: 12),
                               // Favorite Button
                               OutlinedButton.icon(
                                 style: OutlinedButton.styleFrom(
@@ -270,7 +276,6 @@ class _MediaDetailSheetState extends State<MediaDetailSheet> {
                                   userActivity.toggleFavorite(widget.vod.id, 'vod');
                                 },
                               ),
-                              const SizedBox(width: 12),
                               // Download Button
                               OutlinedButton.icon(
                                 style: OutlinedButton.styleFrom(
@@ -296,6 +301,21 @@ class _MediaDetailSheetState extends State<MediaDetailSheet> {
                                         );
                                       },
                               ),
+                              // Open in folder button if downloaded
+                              if (downloadedItem != null)
+                                OutlinedButton.icon(
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppTheme.primary,
+                                    side: const BorderSide(color: AppTheme.primary),
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  ),
+                                  icon: const Icon(Icons.folder_open, size: 18),
+                                  label: const Text('Abrir carpeta'),
+                                  onPressed: () {
+                                    downloadProvider.openItemInFileManager(downloadedItem);
+                                  },
+                                ),
                             ],
                           ),
                         ],

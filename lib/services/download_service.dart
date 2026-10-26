@@ -2,12 +2,16 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/download_item.dart';
 import '../models/app_log.dart';
 import 'log_service.dart';
 
 class DownloadService {
+  static const String prefDownloadDirKey = 'pref_download_directory';
+
   final Dio _dio = Dio(
     BaseOptions(
       connectTimeout: const Duration(seconds: 15),
@@ -20,13 +24,80 @@ class DownloadService {
   final Map<String, CancelToken> _activeTokens = {};
   final Map<String, IOSink> _activeSinks = {};
 
+  Future<String?> getCustomStorageDirectory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final customPath = prefs.getString(prefDownloadDirKey);
+      if (customPath != null && customPath.isNotEmpty) {
+        final dir = Directory(customPath);
+        if (await dir.exists()) {
+          return dir.path;
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  Future<void> setCustomStorageDirectory(String path) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(prefDownloadDirKey, path);
+    LogService.instance.info(
+      LogCategory.downloads,
+      'Carpeta de descargas cambiada a: $path',
+    );
+  }
+
+  Future<void> resetStorageDirectory() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(prefDownloadDirKey);
+  }
+
   Future<String> getStorageDirectoryPath() async {
+    final custom = await getCustomStorageDirectory();
+    if (custom != null) {
+      return custom;
+    }
     final dir = await getApplicationDocumentsDirectory();
     final mediaDir = Directory('${dir.path}/iptv_offline');
     if (!await mediaDir.exists()) {
       await mediaDir.create(recursive: true);
     }
     return mediaDir.path;
+  }
+
+  /// Open or reveal file/folder in native file manager (Finder / Explorer / xdg-open)
+  static Future<void> openInFileManager(String path) async {
+    try {
+      final file = File(path);
+      final dir = Directory(path);
+      final existsFile = await file.exists();
+      final existsDir = await dir.exists();
+
+      if (!existsFile && !existsDir) return;
+
+      if (!kIsWeb && Platform.isMacOS) {
+        if (existsFile) {
+          await Process.run('open', ['-R', path]);
+        } else {
+          await Process.run('open', [path]);
+        }
+      } else if (!kIsWeb && Platform.isWindows) {
+        if (existsFile) {
+          await Process.run('explorer.exe', ['/select,', path]);
+        } else {
+          await Process.run('explorer.exe', [path]);
+        }
+      } else if (!kIsWeb && Platform.isLinux) {
+        final target = existsFile ? file.parent.path : path;
+        await Process.run('xdg-open', [target]);
+      }
+    } catch (e) {
+      LogService.instance.error(
+        LogCategory.system,
+        'No se pudo abrir el explorador de archivos para: $path',
+        details: e.toString(),
+      );
+    }
   }
 
   /// Start recording a live TV stream to .ts file
@@ -131,7 +202,7 @@ class DownloadService {
   Future<String> getVodFilePath(String id, String streamUrl) async {
     final storagePath = await getStorageDirectoryPath();
     final ext = streamUrl.contains('.mkv') ? 'mkv' : 'mp4';
-    return '$storagePath/vod_${id}_$ext';
+    return '$storagePath/vod_$id.$ext';
   }
 
   /// Download or resume VOD movie or Series episode
@@ -148,7 +219,7 @@ class DownloadService {
   }) async {
     final storagePath = await getStorageDirectoryPath();
     final ext = streamUrl.contains('.mkv') ? 'mkv' : 'mp4';
-    final targetPath = existingFilePath ?? '$storagePath/vod_${id}_$ext';
+    final targetPath = existingFilePath ?? '$storagePath/vod_$id.$ext';
 
     final file = File(targetPath);
     int existingBytes = 0;

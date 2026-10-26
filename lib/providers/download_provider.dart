@@ -21,6 +21,11 @@ class DownloadProvider extends ChangeNotifier {
   List<DownloadItem> get pausedDownloads =>
       _items.where((i) => i.status == DownloadStatus.paused).toList();
 
+  String? _currentStoragePath;
+  String? _customStoragePath;
+  String? get currentStoragePath => _currentStoragePath;
+  bool get hasCustomStoragePath => _customStoragePath != null;
+
   DownloadProvider() {
     _init();
   }
@@ -32,7 +37,22 @@ class DownloadProvider extends ChangeNotifier {
     bool metadataChanged = false;
 
     for (final item in _items) {
-      final file = File(item.localFilePath);
+      // Automatic migration: if file was saved with underscore (vod_id_mkv), rename to proper dot extension (vod_id.mkv)
+      var currentItem = item;
+      if (item.localFilePath.endsWith('_mkv') || item.localFilePath.endsWith('_mp4')) {
+        final ext = item.localFilePath.endsWith('_mkv') ? 'mkv' : 'mp4';
+        final newPath = item.localFilePath.replaceAll(RegExp(r'_(mkv|mp4)$'), '.$ext');
+        final oldFile = File(item.localFilePath);
+        if (await oldFile.exists()) {
+          try {
+            await oldFile.rename(newPath);
+            currentItem = item.copyWith(localFilePath: newPath);
+            metadataChanged = true;
+          } catch (_) {}
+        }
+      }
+
+      final file = File(currentItem.localFilePath);
       final exists = await file.exists();
       if (!exists) {
         metadataChanged = true;
@@ -42,8 +62,8 @@ class DownloadProvider extends ChangeNotifier {
       final fileSize = await file.length();
 
       // If app was killed while recording live TV: keep what was captured
-      if (item.status == DownloadStatus.recording) {
-        valid.add(item.copyWith(
+      if (currentItem.status == DownloadStatus.recording) {
+        valid.add(currentItem.copyWith(
           status: DownloadStatus.completed,
           totalBytes: fileSize,
           downloadedBytes: fileSize,
@@ -51,14 +71,14 @@ class DownloadProvider extends ChangeNotifier {
         metadataChanged = true;
       }
       // If app was closed during a VOD download: keep partial file and mark paused
-      else if (item.status == DownloadStatus.downloading) {
-        valid.add(item.copyWith(
+      else if (currentItem.status == DownloadStatus.downloading) {
+        valid.add(currentItem.copyWith(
           status: DownloadStatus.paused,
           downloadedBytes: fileSize,
         ));
         metadataChanged = true;
       } else {
-        valid.add(item);
+        valid.add(currentItem);
       }
     }
 
@@ -66,11 +86,40 @@ class DownloadProvider extends ChangeNotifier {
     if (metadataChanged) {
       await _service.saveDownloadsMetadata(_items);
     }
+    _customStoragePath = await _service.getCustomStorageDirectory();
+    _currentStoragePath = await _service.getStorageDirectoryPath();
     _isInitialized = true;
     if (!_initCompleter.isCompleted) {
       _initCompleter.complete();
     }
     notifyListeners();
+  }
+
+  Future<void> changeStorageDirectory(String newPath) async {
+    await _service.setCustomStorageDirectory(newPath);
+    _customStoragePath = newPath;
+    _currentStoragePath = newPath;
+    notifyListeners();
+  }
+
+  Future<void> resetStorageDirectory() async {
+    await _service.resetStorageDirectory();
+    _customStoragePath = null;
+    _currentStoragePath = await _service.getStorageDirectoryPath();
+    notifyListeners();
+  }
+
+  Future<void> openStorageDirectory() async {
+    final path = _currentStoragePath ?? await _service.getStorageDirectoryPath();
+    await DownloadService.openInFileManager(path);
+  }
+
+  Future<void> openItemInFileManager(DownloadItem item) async {
+    await DownloadService.openInFileManager(item.localFilePath);
+  }
+
+  Future<void> openPathInFileManager(String path) async {
+    await DownloadService.openInFileManager(path);
   }
 
   Future<void> resumeAllPaused() async {
