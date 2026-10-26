@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/category.dart';
 import '../theme/app_theme.dart';
+import 'tv_focusable.dart';
 
 class CategoryCustomItem {
   final String id;
@@ -119,53 +120,66 @@ class CategorySidebar extends StatelessWidget {
     required bool isSelected,
     required VoidCallback onTap,
   }) {
-    return Container(
+    return TvFocusable(
       margin: const EdgeInsets.symmetric(vertical: 2),
-      decoration: BoxDecoration(
-        color: isSelected ? AppTheme.surfaceLight : Colors.transparent,
-        borderRadius: BorderRadius.circular(8),
-        border: isSelected
-            ? Border.all(color: AppTheme.primary.withValues(alpha: 0.5))
-            : null,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: ListTile(
-        dense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-        leading: icon != null
-            ? Icon(
-                icon,
-                size: 18,
-                color: isSelected ? AppTheme.primary : AppTheme.textMuted,
-              )
-            : null,
-        title: Text(
-          title,
-          style: TextStyle(
-            color: isSelected ? AppTheme.primary : AppTheme.textPrimary,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            fontSize: 13,
+      borderRadius: BorderRadius.circular(8),
+      onPressed: onTap,
+      builder: (context, isFocused, isHovered) {
+        final activeColor = isFocused || isSelected ? AppTheme.primary : AppTheme.textPrimary;
+        return Container(
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppTheme.surfaceLight
+                : (isFocused ? AppTheme.primary.withValues(alpha: 0.12) : Colors.transparent),
+            borderRadius: BorderRadius.circular(8),
+            border: isSelected && !isFocused
+                ? Border.all(color: AppTheme.primary.withValues(alpha: 0.5))
+                : null,
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        trailing: count != null
-            ? Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppTheme.surfaceLight,
-                  borderRadius: BorderRadius.circular(10),
+          child: Material(
+            color: Colors.transparent,
+            child: ListTile(
+              dense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+              leading: icon != null
+                  ? Icon(
+                      icon,
+                      size: 18,
+                      color: isFocused || isSelected ? AppTheme.primary : AppTheme.textMuted,
+                    )
+                  : null,
+              title: Text(
+                title,
+                style: TextStyle(
+                  color: activeColor,
+                  fontWeight: isFocused || isSelected ? FontWeight.bold : FontWeight.normal,
+                  fontSize: 13,
                 ),
-                child: Text(
-                  '$count',
-                  style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
-                ),
-              )
-            : null,
-        onTap: onTap,
-      ),
-      ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              trailing: count != null
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceLight,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '$count',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isFocused || isSelected ? AppTheme.primary : AppTheme.textMuted,
+                          fontWeight: isFocused || isSelected ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    )
+                  : null,
+              onTap: onTap,
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -12,6 +12,7 @@ import '../widgets/category_sidebar.dart';
 import '../widgets/channel_epg_dialog.dart';
 import '../widgets/catchup_dialog.dart';
 import '../widgets/sort_filter_button.dart';
+import '../widgets/tv_focusable.dart';
 import 'player_screen.dart';
 
 class LiveTvScreen extends StatelessWidget {
@@ -158,181 +159,10 @@ class LiveTvScreen extends StatelessWidget {
                           final channel = channels[index];
                           final isFav = userActivity.isFavorite(channel.id, 'live');
 
-                          return Material(
-                            color: Colors.transparent,
-                            child: ListTile(
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                            leading: Container(
-                              width: 50,
-                              height: 50,
-                              decoration: BoxDecoration(
-                                color: AppTheme.surfaceLight,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: AppTheme.border.withValues(alpha: 0.5)),
-                              ),
-                              clipBehavior: Clip.antiAlias,
-                              child: channel.logoUrl != null && channel.logoUrl!.isNotEmpty
-                                  ? Image.network(
-                                      channel.logoUrl!,
-                                      fit: BoxFit.contain,
-                                      errorBuilder: (_, _, _) => const Icon(
-                                        Icons.live_tv,
-                                        color: AppTheme.textMuted,
-                                        size: 24,
-                                      ),
-                                    )
-                                  : const Icon(Icons.live_tv, color: AppTheme.textMuted, size: 24),
-                            ),
-                            title: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    channel.name,
-                                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                if (downloadProvider.isChannelRecording(channel.id))
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: AppTheme.accentRed,
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: const Text('REC', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
-                                  ),
-                              ],
-                            ),
-                            subtitle: Builder(
-                              builder: (context) {
-                                final currentProg = epg.getCurrentProgram(
-                                  channel.id,
-                                  channelTvgId: channel.epgChannelId,
-                                  channelName: channel.name,
-                                );
-
-                                return Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    if (currentProg != null) ...[
-                                      const SizedBox(height: 3),
-                                      Text(
-                                        '${currentProg.title} • ${currentProg.formattedTimeRange}',
-                                        style: const TextStyle(
-                                          color: AppTheme.primary,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.circular(2),
-                                        child: LinearProgressIndicator(
-                                          value: currentProg.progressFraction,
-                                          backgroundColor: AppTheme.surfaceLight,
-                                          color: AppTheme.primary,
-                                          minHeight: 2.5,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 3),
-                                    ],
-                                    Text(
-                                      channel.groupTitle ?? 'Canal ${channel.channelNumber ?? index + 1}',
-                                      style: const TextStyle(color: AppTheme.textMuted, fontSize: 11),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                // EPG Guide Button
-                                IconButton(
-                                  icon: const Icon(Icons.event_note, color: AppTheme.textSecondary, size: 20),
-                                  tooltip: 'Guía EPG del canal',
-                                  onPressed: () {
-                                    showDialog(
-                                      context: context,
-                                      builder: (_) => ChannelEpgDialog(channel: channel),
-                                    );
-                                  },
-                                ),
-                                // Catch-up / Replay Button
-                                if (activeProfile != null)
-                                  IconButton(
-                                    icon: const Icon(Icons.history, color: AppTheme.textSecondary, size: 20),
-                                    tooltip: 'Replay TV (Programas anteriores)',
-                                    onPressed: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (_) => CatchupDialog(
-                                          channel: channel,
-                                          profile: activeProfile,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                // PVR Record Button
-                                IconButton(
-                                  icon: Icon(
-                                    downloadProvider.isChannelRecording(channel.id) ? Icons.stop_circle : Icons.fiber_manual_record,
-                                    color: downloadProvider.isChannelRecording(channel.id) ? AppTheme.accentRed : AppTheme.textMuted,
-                                    size: 20,
-                                  ),
-                                  tooltip: downloadProvider.isChannelRecording(channel.id) ? 'Detener grabación' : 'Grabar en directo',
-                                  onPressed: () {
-                                    downloadProvider.toggleLiveRecording(
-                                      channelId: channel.id,
-                                      title: channel.name,
-                                      streamUrl: channel.url,
-                                      posterUrl: channel.logoUrl,
-                                    );
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          downloadProvider.isChannelRecording(channel.id)
-                                              ? 'Grabación de "${channel.name}" detenida y guardada'
-                                              : 'Grabando "${channel.name}" en segundo plano...',
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                                // Favorite Star Button
-                                IconButton(
-                                  icon: Icon(
-                                    isFav ? Icons.star : Icons.star_border,
-                                    color: isFav ? Colors.amber : AppTheme.textMuted,
-                                    size: 22,
-                                  ),
-                                  onPressed: () {
-                                    userActivity.toggleFavorite(channel.id, 'live');
-                                  },
-                                ),
-                                if (selectedCategory == '__recents__')
-                                  IconButton(
-                                    icon: const Icon(Icons.close, color: AppTheme.textMuted, size: 20),
-                                    tooltip: 'Quitar de recientes',
-                                    onPressed: () {
-                                      userActivity.removeRecentChannel(channel.id);
-                                    },
-                                  ),
-                                const SizedBox(width: 4),
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: const BoxDecoration(
-                                    color: AppTheme.surfaceLight,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(Icons.play_arrow, color: AppTheme.primary, size: 20),
-                                ),
-                              ],
-                            ),
-                            onTap: () {
+                          return TvFocusable(
+                            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+                            borderRadius: BorderRadius.circular(10),
+                            onPressed: () {
                               userActivity.addRecentChannel(channel);
                               Navigator.of(context).push(
                                 MaterialPageRoute(
@@ -346,8 +176,211 @@ class LiveTvScreen extends StatelessWidget {
                                 ),
                               );
                             },
-                          ),
-                        );
+                            builder: (context, isFocused, isHovered) {
+                              return Material(
+                                color: Colors.transparent,
+                                child: ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                                  leading: Container(
+                                    width: 50,
+                                    height: 50,
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.surfaceLight,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: isFocused
+                                            ? AppTheme.primary
+                                            : AppTheme.border.withValues(alpha: 0.5),
+                                      ),
+                                    ),
+                                    clipBehavior: Clip.antiAlias,
+                                    child: channel.logoUrl != null && channel.logoUrl!.isNotEmpty
+                                        ? Image.network(
+                                            channel.logoUrl!,
+                                            fit: BoxFit.contain,
+                                            errorBuilder: (_, _, _) => const Icon(
+                                              Icons.live_tv,
+                                              color: AppTheme.textMuted,
+                                              size: 24,
+                                            ),
+                                          )
+                                        : const Icon(Icons.live_tv, color: AppTheme.textMuted, size: 24),
+                                  ),
+                                  title: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          channel.name,
+                                          style: TextStyle(
+                                            fontWeight: isFocused ? FontWeight.bold : FontWeight.w600,
+                                            fontSize: 15,
+                                            color: isFocused ? AppTheme.primary : AppTheme.textPrimary,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      if (downloadProvider.isChannelRecording(channel.id))
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: AppTheme.accentRed,
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: const Text('REC', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+                                        ),
+                                    ],
+                                  ),
+                                  subtitle: Builder(
+                                    builder: (context) {
+                                      final currentProg = epg.getCurrentProgram(
+                                        channel.id,
+                                        channelTvgId: channel.epgChannelId,
+                                        channelName: channel.name,
+                                      );
+
+                                      return Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          if (currentProg != null) ...[
+                                            const SizedBox(height: 3),
+                                            Text(
+                                              '${currentProg.title} • ${currentProg.formattedTimeRange}',
+                                              style: const TextStyle(
+                                                color: AppTheme.primary,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 4),
+                                            ClipRRect(
+                                              borderRadius: BorderRadius.circular(2),
+                                              child: LinearProgressIndicator(
+                                                value: currentProg.progressFraction,
+                                                backgroundColor: AppTheme.surfaceLight,
+                                                color: AppTheme.primary,
+                                                minHeight: 2.5,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 3),
+                                          ],
+                                          Text(
+                                            channel.groupTitle ?? 'Canal ${channel.channelNumber ?? index + 1}',
+                                            style: const TextStyle(color: AppTheme.textMuted, fontSize: 11),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  ),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      // EPG Guide Button
+                                      IconButton(
+                                        icon: const Icon(Icons.event_note, color: AppTheme.textSecondary, size: 20),
+                                        tooltip: 'Guía EPG del canal',
+                                        onPressed: () {
+                                          showDialog(
+                                            context: context,
+                                            builder: (_) => ChannelEpgDialog(channel: channel),
+                                          );
+                                        },
+                                      ),
+                                      // Catch-up / Replay Button
+                                      if (activeProfile != null)
+                                        IconButton(
+                                          icon: const Icon(Icons.history, color: AppTheme.textSecondary, size: 20),
+                                          tooltip: 'Replay TV (Programas anteriores)',
+                                          onPressed: () {
+                                            showDialog(
+                                              context: context,
+                                              builder: (_) => CatchupDialog(
+                                                channel: channel,
+                                                profile: activeProfile,
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      // PVR Record Button
+                                      IconButton(
+                                        icon: Icon(
+                                          downloadProvider.isChannelRecording(channel.id) ? Icons.stop_circle : Icons.fiber_manual_record,
+                                          color: downloadProvider.isChannelRecording(channel.id) ? AppTheme.accentRed : AppTheme.textMuted,
+                                          size: 20,
+                                        ),
+                                        tooltip: downloadProvider.isChannelRecording(channel.id) ? 'Detener grabación' : 'Grabar en directo',
+                                        onPressed: () {
+                                          downloadProvider.toggleLiveRecording(
+                                            channelId: channel.id,
+                                            title: channel.name,
+                                            streamUrl: channel.url,
+                                            posterUrl: channel.logoUrl,
+                                          );
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                downloadProvider.isChannelRecording(channel.id)
+                                                    ? 'Grabación de "${channel.name}" detenida y guardada'
+                                                    : 'Grabando "${channel.name}" en segundo plano...',
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                      // Favorite Star Button
+                                      IconButton(
+                                        icon: Icon(
+                                          isFav ? Icons.star : Icons.star_border,
+                                          color: isFav ? Colors.amber : AppTheme.textMuted,
+                                          size: 22,
+                                        ),
+                                        onPressed: () {
+                                          userActivity.toggleFavorite(channel.id, 'live');
+                                        },
+                                      ),
+                                      if (selectedCategory == '__recents__')
+                                        IconButton(
+                                          icon: const Icon(Icons.close, color: AppTheme.textMuted, size: 20),
+                                          tooltip: 'Quitar de recientes',
+                                          onPressed: () {
+                                            userActivity.removeRecentChannel(channel.id);
+                                          },
+                                        ),
+                                      const SizedBox(width: 4),
+                                      Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: isFocused ? AppTheme.primary : AppTheme.surfaceLight,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(
+                                          Icons.play_arrow,
+                                          color: isFocused ? Colors.black : AppTheme.primary,
+                                          size: 20,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  onTap: () {
+                                    userActivity.addRecentChannel(channel);
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => PlayerScreen(
+                                          streamUrl: channel.url,
+                                          title: channel.name,
+                                          isLive: true,
+                                          contentId: channel.id,
+                                          type: 'live',
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                          );
                         },
                       ),
               ),

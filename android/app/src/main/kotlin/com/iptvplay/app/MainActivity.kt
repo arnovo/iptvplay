@@ -1,4 +1,4 @@
-package com.iptvexp.iptv_expert_clone
+package com.iptvplay.app
 
 import io.flutter.embedding.android.FlutterActivity
 

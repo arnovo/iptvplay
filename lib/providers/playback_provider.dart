@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import '../models/app_log.dart';
@@ -60,21 +61,21 @@ class PlaybackProvider extends ChangeNotifier {
     _subscriptions.add(
       _player.stream.buffering.listen((buffering) {
         _isBuffering = buffering;
-        notifyListeners();
+        _safeNotifyListeners();
       }),
     );
 
     _subscriptions.add(
       _player.stream.position.listen((pos) {
         _position = pos;
-        notifyListeners();
+        _safeNotifyListeners();
       }),
     );
 
     _subscriptions.add(
       _player.stream.duration.listen((dur) {
         _duration = dur;
-        notifyListeners();
+        _safeNotifyListeners();
       }),
     );
 
@@ -89,9 +90,24 @@ class PlaybackProvider extends ChangeNotifier {
     );
   }
 
+  void _safeNotifyListeners() {
+    try {
+      if (WidgetsBinding.instance.schedulerPhase == SchedulerPhase.persistentCallbacks) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+        });
+      } else {
+        notifyListeners();
+      }
+    } catch (_) {
+      notifyListeners();
+    }
+  }
+
   void setPlayerScreenOpen(bool isOpen) {
+    if (_isPlayerScreenOpen == isOpen) return;
     _isPlayerScreenOpen = isOpen;
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   /// Start playing a stream. Ensures only ONE single stream is ever active at any time.

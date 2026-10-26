@@ -8,6 +8,7 @@ import '../../models/sort_option.dart';
 import '../theme/app_theme.dart';
 import '../widgets/category_sidebar.dart';
 import '../widgets/sort_filter_button.dart';
+import '../widgets/tv_focusable.dart';
 import 'player_screen.dart';
 
 class SeriesScreen extends StatelessWidget {
@@ -145,87 +146,97 @@ class SeriesScreen extends StatelessWidget {
   Widget _buildSeriesCard(BuildContext context, SeriesItem series, UserActivityProvider userActivity) {
     final isFav = userActivity.isFavorite(series.id, 'series');
 
-    return InkWell(
-      onTap: () => _showSeriesEpisodes(context, series),
+    return TvFocusable(
       borderRadius: BorderRadius.circular(12),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppTheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppTheme.border),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  series.posterUrl != null && series.posterUrl!.isNotEmpty
-                      ? Image.network(
-                          series.posterUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => _buildPosterPlaceholder(),
-                        )
-                      : _buildPosterPlaceholder(),
+      onPressed: () => _showSeriesEpisodes(context, series),
+      scaleOnFocus: 1.05,
+      builder: (context, isFocused, isHovered) {
+        return Container(
+          decoration: BoxDecoration(
+            color: AppTheme.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isFocused ? AppTheme.primary : AppTheme.border,
+              width: isFocused ? 2.0 : 1.0,
+            ),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    series.posterUrl != null && series.posterUrl!.isNotEmpty
+                        ? Image.network(
+                            series.posterUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => _buildPosterPlaceholder(),
+                          )
+                        : _buildPosterPlaceholder(),
 
-                  // Rating badge
-                  if (series.rating != null && series.rating!.isNotEmpty)
+                    // Rating badge
+                    if (series.rating != null && series.rating!.isNotEmpty)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.75),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: Colors.amber.withValues(alpha: 0.5)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.star, color: Colors.amber, size: 12),
+                              const SizedBox(width: 4),
+                              Text(
+                                series.rating!,
+                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                    // Favorite Button
                     Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.75),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: Colors.amber.withValues(alpha: 0.5)),
+                      top: 4,
+                      left: 4,
+                      child: IconButton(
+                        icon: Icon(
+                          isFav ? Icons.star : Icons.star_border,
+                          color: isFav ? Colors.amber : Colors.white70,
+                          size: 22,
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.star, color: Colors.amber, size: 12),
-                            const SizedBox(width: 4),
-                            Text(
-                              series.rating!,
-                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
+                        onPressed: () {
+                          userActivity.toggleFavorite(series.id, 'series');
+                        },
                       ),
                     ),
-
-                  // Favorite Button
-                  Positioned(
-                    top: 4,
-                    left: 4,
-                    child: IconButton(
-                      icon: Icon(
-                        isFav ? Icons.star : Icons.star_border,
-                        color: isFav ? Colors.amber : Colors.white70,
-                        size: 22,
-                      ),
-                      onPressed: () {
-                        userActivity.toggleFavorite(series.id, 'series');
-                      },
-                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(10),
+                child: Text(
+                  series.name,
+                  style: TextStyle(
+                    fontWeight: isFocused ? FontWeight.w900 : FontWeight.bold,
+                    fontSize: 13,
+                    color: isFocused ? AppTheme.primary : AppTheme.textPrimary,
                   ),
-                ],
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Text(
-                series.name,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 

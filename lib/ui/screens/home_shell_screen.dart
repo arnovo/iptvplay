@@ -18,6 +18,7 @@ import 'profile_list_screen.dart';
 import 'add_profile_dialog.dart';
 import '../widgets/backup_dialog.dart';
 import '../widgets/miniplayer_bar.dart';
+import '../widgets/tv_focusable.dart';
 
 class HomeShellScreen extends StatefulWidget {
   const HomeShellScreen({super.key});
@@ -367,44 +368,55 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
     required int index,
   }) {
     final isSelected = _selectedIndex == index;
-    return Container(
+    return TvFocusable(
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-      decoration: BoxDecoration(
-        color: isSelected ? AppTheme.surfaceLight : Colors.transparent,
-        borderRadius: BorderRadius.circular(10),
-        border: isSelected ? Border.all(color: AppTheme.primary.withValues(alpha: 0.5)) : null,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: ListTile(
-          dense: true,
-          leading: Icon(icon, color: isSelected ? AppTheme.primary : AppTheme.textSecondary, size: 20),
-          title: Text(
-            title,
-            style: TextStyle(
-              color: isSelected ? AppTheme.textPrimary : AppTheme.textSecondary,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              fontSize: 13,
-            ),
+      borderRadius: BorderRadius.circular(10),
+      onPressed: () => setState(() => _selectedIndex = index),
+      builder: (context, isFocused, isHovered) {
+        final activeColor = isFocused || isSelected ? AppTheme.primary : AppTheme.textSecondary;
+        return Container(
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppTheme.surfaceLight
+                : (isFocused ? AppTheme.primary.withValues(alpha: 0.1) : Colors.transparent),
+            borderRadius: BorderRadius.circular(10),
+            border: isSelected && !isFocused
+                ? Border.all(color: AppTheme.primary.withValues(alpha: 0.5))
+                : null,
           ),
-          trailing: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: isSelected ? AppTheme.primary.withValues(alpha: 0.15) : AppTheme.surfaceLight,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              badge,
-              style: TextStyle(
-                fontSize: 11,
-                color: isSelected ? AppTheme.primary : AppTheme.textMuted,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          child: Material(
+            color: Colors.transparent,
+            child: ListTile(
+              dense: true,
+              leading: Icon(icon, color: activeColor, size: 20),
+              title: Text(
+                title,
+                style: TextStyle(
+                  color: isFocused || isSelected ? AppTheme.textPrimary : AppTheme.textSecondary,
+                  fontWeight: isFocused || isSelected ? FontWeight.bold : FontWeight.normal,
+                  fontSize: 13,
+                ),
               ),
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppTheme.primary.withValues(alpha: 0.15) : AppTheme.surfaceLight,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  badge,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isFocused || isSelected ? AppTheme.primary : AppTheme.textMuted,
+                    fontWeight: isFocused || isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+              ),
+              onTap: () => setState(() => _selectedIndex = index),
             ),
           ),
-          onTap: () => setState(() => _selectedIndex = index),
-        ),
-      ),
+        );
+      },
     );
   }
 

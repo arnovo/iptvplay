@@ -120,7 +120,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
     final playback = context.read<PlaybackProvider>();
     _player = playback.player;
     _controller = playback.videoController;
-    playback.setPlayerScreenOpen(true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<PlaybackProvider>().setPlayerScreenOpen(true);
+      }
+    });
 
     _checkInitialFullScreen();
     _initPlayer();
@@ -759,21 +763,37 @@ class _PlayerScreenState extends State<PlayerScreen> {
             if (event.logicalKey == LogicalKeyboardKey.keyF) {
               _toggleFullScreen();
               return KeyEventResult.handled;
-            } else if (event.logicalKey == LogicalKeyboardKey.escape) {
+            } else if (event.logicalKey == LogicalKeyboardKey.escape ||
+                event.logicalKey == LogicalKeyboardKey.goBack) {
               if (_isFullScreen) {
                 _toggleFullScreen();
                 return KeyEventResult.handled;
+              } else if (_showControls) {
+                setState(() => _showControls = false);
+                return KeyEventResult.handled;
               }
-            } else if (event.logicalKey == LogicalKeyboardKey.space) {
+            } else if (event.logicalKey == LogicalKeyboardKey.space ||
+                event.logicalKey == LogicalKeyboardKey.select ||
+                event.logicalKey == LogicalKeyboardKey.enter ||
+                event.logicalKey == LogicalKeyboardKey.gameButtonA ||
+                event.logicalKey == LogicalKeyboardKey.mediaPlayPause) {
               _onPlayPauseTap();
+              return KeyEventResult.handled;
+            } else if (event.logicalKey == LogicalKeyboardKey.mediaPlay) {
+              _player.play();
+              return KeyEventResult.handled;
+            } else if (event.logicalKey == LogicalKeyboardKey.mediaPause) {
+              _player.pause();
               return KeyEventResult.handled;
             } else if (event.logicalKey == LogicalKeyboardKey.keyM) {
               _toggleMute();
               return KeyEventResult.handled;
-            } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+            } else if (event.logicalKey == LogicalKeyboardKey.arrowRight ||
+                event.logicalKey == LogicalKeyboardKey.mediaFastForward) {
               _handleSeekKeyDown(10);
               return KeyEventResult.handled;
-            } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+            } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft ||
+                event.logicalKey == LogicalKeyboardKey.mediaRewind) {
               _handleSeekKeyDown(-10);
               return KeyEventResult.handled;
             } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
@@ -795,7 +815,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
             }
           } else if (event is KeyUpEvent) {
             if (event.logicalKey == LogicalKeyboardKey.arrowRight ||
-                event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+                event.logicalKey == LogicalKeyboardKey.arrowLeft ||
+                event.logicalKey == LogicalKeyboardKey.mediaFastForward ||
+                event.logicalKey == LogicalKeyboardKey.mediaRewind) {
               _handleSeekKeyUp(event.logicalKey);
               return KeyEventResult.handled;
             }

@@ -46,3 +46,19 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Sensitive files / Credentials / Keys
+*.env
+*.env.*
+*.jks
+*.keystore
+*.p12
+*.pem
+*.key
+*.mobileprovision
+*.cer
+
+# Local IPTV user storage & downloaded media
+iptv_cache/
+iptv_offline/
+*.backup.json

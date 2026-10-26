@@ -8,6 +8,7 @@ import '../theme/app_theme.dart';
 import '../widgets/category_sidebar.dart';
 import '../widgets/media_detail_sheet.dart';
 import '../widgets/sort_filter_button.dart';
+import '../widgets/tv_focusable.dart';
 import 'player_screen.dart';
 
 class VodScreen extends StatelessWidget {
@@ -266,101 +267,111 @@ class VodScreen extends StatelessWidget {
     final isFav = userActivity.isFavorite(movie.id, 'vod');
     final progress = userActivity.getProgress(movie.id);
 
-    return InkWell(
-      onTap: () => _showMovieDetails(context, movie, progress?.positionSeconds),
+    return TvFocusable(
       borderRadius: BorderRadius.circular(12),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppTheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppTheme.border),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  movie.posterUrl != null && movie.posterUrl!.isNotEmpty
-                      ? Image.network(
-                          movie.posterUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => _buildPosterPlaceholder(),
-                        )
-                      : _buildPosterPlaceholder(),
+      onPressed: () => _showMovieDetails(context, movie, progress?.positionSeconds),
+      scaleOnFocus: 1.05,
+      builder: (context, isFocused, isHovered) {
+        return Container(
+          decoration: BoxDecoration(
+            color: AppTheme.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isFocused ? AppTheme.primary : AppTheme.border,
+              width: isFocused ? 2.0 : 1.0,
+            ),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    movie.posterUrl != null && movie.posterUrl!.isNotEmpty
+                        ? Image.network(
+                            movie.posterUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => _buildPosterPlaceholder(),
+                          )
+                        : _buildPosterPlaceholder(),
 
-                  // Rating Badge
-                  if (movie.rating != null && movie.rating!.isNotEmpty)
+                    // Rating Badge
+                    if (movie.rating != null && movie.rating!.isNotEmpty)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.75),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: Colors.amber.withValues(alpha: 0.5)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.star, color: Colors.amber, size: 12),
+                              const SizedBox(width: 4),
+                              Text(
+                                movie.rating!,
+                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                    // Favorite Button
                     Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.75),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: Colors.amber.withValues(alpha: 0.5)),
+                      top: 4,
+                      left: 4,
+                      child: IconButton(
+                        icon: Icon(
+                          isFav ? Icons.star : Icons.star_border,
+                          color: isFav ? Colors.amber : Colors.white70,
+                          size: 22,
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.star, color: Colors.amber, size: 12),
-                            const SizedBox(width: 4),
-                            Text(
-                              movie.rating!,
-                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
+                        onPressed: () {
+                          userActivity.toggleFavorite(movie.id, 'vod');
+                        },
                       ),
                     ),
 
-                  // Favorite Button
-                  Positioned(
-                    top: 4,
-                    left: 4,
-                    child: IconButton(
-                      icon: Icon(
-                        isFav ? Icons.star : Icons.star_border,
-                        color: isFav ? Colors.amber : Colors.white70,
-                        size: 22,
+                    // Playback Progress Bar on poster
+                    if (progress != null && progress.progressFraction > 0)
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        child: LinearProgressIndicator(
+                          value: progress.progressFraction,
+                          color: AppTheme.primary,
+                          backgroundColor: Colors.black54,
+                          minHeight: 4,
+                        ),
                       ),
-                      onPressed: () {
-                        userActivity.toggleFavorite(movie.id, 'vod');
-                      },
-                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(10),
+                child: Text(
+                  movie.name,
+                  style: TextStyle(
+                    fontWeight: isFocused ? FontWeight.w900 : FontWeight.bold,
+                    fontSize: 13,
+                    color: isFocused ? AppTheme.primary : AppTheme.textPrimary,
                   ),
-
-                  // Playback Progress Bar on poster
-                  if (progress != null && progress.progressFraction > 0)
-                    Positioned(
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      child: LinearProgressIndicator(
-                        value: progress.progressFraction,
-                        color: AppTheme.primary,
-                        backgroundColor: Colors.black54,
-                        minHeight: 4,
-                      ),
-                    ),
-                ],
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Text(
-                movie.name,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 
