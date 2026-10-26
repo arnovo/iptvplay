@@ -3,16 +3,12 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../models/channel.dart';
 import '../../models/epg_program.dart';
-import '../../models/epg_reminder.dart';
 import '../../providers/catalog_provider.dart';
 import '../../providers/epg_provider.dart';
-import '../../providers/profile_provider.dart';
-import '../../services/reminder_service.dart';
 import '../../services/parental_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/epg_program_modal.dart';
 import '../widgets/tv_focusable.dart';
-import '../widgets/catchup_dialog.dart';
-import 'player_screen.dart';
 
 /// Pantalla de Guía de TV (EPG) en formato de cuadrícula tradicional (tipo decodificador)
 class EpgGridScreen extends StatefulWidget {
@@ -491,229 +487,14 @@ class _EpgGridScreenState extends State<EpgGridScreen> {
 
   /// Muestra el modal con opciones del programa (reproducir, programar recordatorio, catchup)
   void _showProgramDetailsModal(Channel channel, EpgProgram program) {
-    final reminderService = ReminderService.instance;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppTheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        side: BorderSide(color: AppTheme.border, width: 1.5),
-      ),
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            final hasReminderNow = reminderService.isReminderSet(channel.id, program.start);
-
-            return Container(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      if (channel.logoUrl != null && channel.logoUrl!.isNotEmpty)
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            channel.logoUrl!,
-                            width: 40,
-                            height: 40,
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, _, _) => const Icon(Icons.tv, size: 24),
-                          ),
-                        ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              program.title,
-                              style: const TextStyle(
-                                color: AppTheme.textPrimary,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              '${channel.name} • ${program.formattedTimeRange} (${program.durationText})',
-                              style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (program.description != null && program.description!.isNotEmpty) ...[
-                    const SizedBox(height: 14),
-                    Text(
-                      program.description!,
-                      maxLines: 4,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.4),
-                    ),
-                  ],
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      // Acción 1: Si es en directo -> Ver Canal
-                      if (program.isCurrent)
-                        Expanded(
-                          child: TvFocusable(
-                            onPressed: () {
-                              Navigator.of(ctx).pop();
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => PlayerScreen(
-                                    streamUrl: channel.url,
-                                    title: channel.name,
-                                    isLive: true,
-                                    contentId: channel.id,
-                                    type: 'live',
-                                  ),
-                                ),
-                              );
-                            },
-                            borderRadius: BorderRadius.circular(10),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              decoration: BoxDecoration(
-                                color: AppTheme.primary,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              alignment: Alignment.center,
-                              child: const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.play_arrow_rounded, color: AppTheme.background),
-                                  SizedBox(width: 6),
-                                  Text(
-                                    'Ver Canal en Directo',
-                                    style: TextStyle(
-                                      color: AppTheme.background,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        )
-                      // Acción 2: Si es futuro -> Recordatorio
-                      else if (program.isFuture)
-                        Expanded(
-                          child: TvFocusable(
-                            onPressed: () async {
-                              if (hasReminderNow) {
-                                final r = reminderService.reminders.firstWhere(
-                                  (rem) =>
-                                      rem.channelId == channel.id &&
-                                      rem.startTime.millisecondsSinceEpoch == program.start.millisecondsSinceEpoch,
-                                );
-                                await reminderService.removeReminder(r.id);
-                              } else {
-                                final reminder = EpgReminder(
-                                  id: '${channel.id}_${program.start.millisecondsSinceEpoch}',
-                                  channelId: channel.id,
-                                  channelName: channel.name,
-                                  channelLogo: channel.logoUrl,
-                                  programTitle: program.title,
-                                  programDescription: program.description,
-                                  startTime: program.start,
-                                  endTime: program.end,
-                                );
-                                await reminderService.addReminder(reminder);
-                              }
-                              setModalState(() {});
-                              if (mounted) setState(() {});
-                            },
-                            borderRadius: BorderRadius.circular(10),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              decoration: BoxDecoration(
-                                color: hasReminderNow ? AppTheme.accentYellow : AppTheme.surfaceLight,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: hasReminderNow ? AppTheme.accentYellow : AppTheme.border,
-                                ),
-                              ),
-                              alignment: Alignment.center,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    hasReminderNow ? Icons.notifications_active : Icons.notification_add_outlined,
-                                    color: hasReminderNow ? AppTheme.background : AppTheme.primary,
-                                    size: 18,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    hasReminderNow ? 'Recordatorio Activado' : 'Avisarme al Comenzar',
-                                    style: TextStyle(
-                                      color: hasReminderNow ? AppTheme.background : AppTheme.textPrimary,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        )
-                      // Acción 3: Si es pasado -> Catchup si hay perfil activo
-                      else if (context.read<ProfileProvider>().activeProfile != null)
-                        Expanded(
-                          child: TvFocusable(
-                            onPressed: () {
-                              final profile = context.read<ProfileProvider>().activeProfile;
-                              if (profile == null) return;
-                              Navigator.of(ctx).pop();
-                              showDialog(
-                                context: context,
-                                builder: (_) => CatchupDialog(
-                                  channel: channel,
-                                  profile: profile,
-                                ),
-                              );
-                            },
-                            borderRadius: BorderRadius.circular(10),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              decoration: BoxDecoration(
-                                color: AppTheme.surfaceLight,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: AppTheme.border),
-                              ),
-                              alignment: Alignment.center,
-                              child: const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.history, color: AppTheme.primary, size: 18),
-                                  SizedBox(width: 6),
-                                  Text(
-                                    'Ver Grabación (Catchup)',
-                                    style: TextStyle(
-                                      color: AppTheme.textPrimary,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          },
-        );
+    EpgProgramDetailsModal.show(
+      context,
+      channel: channel,
+      program: program,
+      onReminderChanged: () {
+        if (mounted) setState(() {});
       },
     );
   }
 }
+
