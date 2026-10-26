@@ -12,8 +12,8 @@ class XtreamService {
       : _dio = dio ??
             Dio(
               BaseOptions(
-                connectTimeout: const Duration(seconds: 15),
-                receiveTimeout: const Duration(seconds: 30),
+                connectTimeout: const Duration(seconds: 45),
+                receiveTimeout: const Duration(seconds: 90),
                 headers: {
                   'User-Agent': 'IPTVSmartersPro/3.1.5.1 (Linux; Android 12) AppleWebKit/537.36',
                 },

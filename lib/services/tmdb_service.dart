@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -118,7 +119,13 @@ class TmdbService {
         .trim();
   }
 
+  static final Map<String, TmdbMetadata> _webTmdbMemoryCache = {};
+
   Future<void> _saveToCache(String cleanTitle, TmdbMetadata meta) async {
+    if (kIsWeb) {
+      _webTmdbMemoryCache[cleanTitle] = meta;
+      return;
+    }
     try {
       final dir = await getApplicationDocumentsDirectory();
       final cacheDir = Directory('${dir.path}/iptv_cache/tmdb');
@@ -131,6 +138,9 @@ class TmdbService {
   }
 
   Future<TmdbMetadata?> _loadFromCache(String cleanTitle) async {
+    if (kIsWeb) {
+      return _webTmdbMemoryCache[cleanTitle];
+    }
     try {
       final dir = await getApplicationDocumentsDirectory();
       final safeKey = cleanTitle.replaceAll(RegExp(r'[^\w]'), '_');

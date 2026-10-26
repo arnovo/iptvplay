@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import '../../services/subtitle_service.dart';
@@ -121,7 +120,7 @@ class _SubtitlesDialogState extends State<SubtitlesDialog>
   Future<void> _pickLocalFile() async {
     final path = await _subtitleService.pickLocalSubtitleFile();
     if (path != null && mounted) {
-      final filename = path.split(Platform.pathSeparator).last;
+      final filename = path.split(RegExp(r'[\\/]')).last;
       await widget.player.setSubtitleTrack(
         SubtitleTrack.uri(path, title: filename, language: 'local'),
       );

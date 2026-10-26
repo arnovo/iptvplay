@@ -11,7 +11,7 @@ class CatchupService {
       : _dio = dio ??
             Dio(
               BaseOptions(
-                connectTimeout: const Duration(seconds: 15),
+                connectTimeout: const Duration(seconds: 45),
                 headers: {
                   'User-Agent': 'IPTVPlay/1.0.0 (Darwin; Apple Silicon)',
                 },

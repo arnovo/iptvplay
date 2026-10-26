@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../../models/playlist_profile.dart';
 import '../../../providers/catalog_provider.dart';
@@ -107,7 +108,8 @@ class HomeHeroBanner extends StatelessWidget {
                   ),
                 ),
               ),
-              TvFocusable(
+              if (!kIsWeb)
+                TvFocusable(
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const EpgGridScreen()),

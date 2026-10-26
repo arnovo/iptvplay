@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
+import 'web_storage_service.dart';
 import '../models/playlist_profile.dart';
 import '../models/channel.dart';
 import '../models/vod_item.dart';
@@ -154,6 +155,10 @@ class IptvRepository {
   final M3uParserService _m3uParser = M3uParserService();
   final XtreamService _xtreamService = XtreamService();
 
+  // In-memory cache for fast access
+  static final Map<String, LoadedContent> _webMemoryCache = {};
+  static const String _webCacheKeyPrefix = 'iptv_web_cache_';
+
   Future<File> _getCacheFile(String profileId) async {
     final dir = await getApplicationSupportDirectory();
     final cacheDir = Directory('${dir.path}/iptv_cache');
@@ -164,6 +169,23 @@ class IptvRepository {
   }
 
   Future<LoadedContent?> getCachedContent(String profileId) async {
+    if (kIsWeb) {
+      if (_webMemoryCache.containsKey(profileId)) {
+        return _webMemoryCache[profileId];
+      }
+      try {
+        final jsonStr = await WebStorageService.getItem('$_webCacheKeyPrefix$profileId');
+        if (jsonStr != null && jsonStr.isNotEmpty) {
+          final map = json.decode(jsonStr) as Map<String, dynamic>;
+          final content = LoadedContent.fromMap(map);
+          _webMemoryCache[profileId] = content;
+          return content;
+        }
+      } catch (e) {
+        debugPrint('Error leyendo caché web IndexedDB: $e');
+      }
+      return null;
+    }
     try {
       final file = await _getCacheFile(profileId);
       if (await file.exists()) {
@@ -180,6 +202,16 @@ class IptvRepository {
   }
 
   Future<void> saveCachedContent(String profileId, LoadedContent content) async {
+    if (kIsWeb) {
+      _webMemoryCache[profileId] = content;
+      try {
+        final jsonStr = json.encode(content.toMap());
+        await WebStorageService.setItem('$_webCacheKeyPrefix$profileId', jsonStr);
+      } catch (e) {
+        debugPrint('Error guardando caché web IndexedDB: $e');
+      }
+      return;
+    }
     try {
       final file = await _getCacheFile(profileId);
       final jsonStr = json.encode(content.toMap());
@@ -190,6 +222,13 @@ class IptvRepository {
   }
 
   Future<void> deleteCache(String profileId) async {
+    if (kIsWeb) {
+      _webMemoryCache.remove(profileId);
+      try {
+        await WebStorageService.removeItem('$_webCacheKeyPrefix$profileId');
+      } catch (_) {}
+      return;
+    }
     try {
       final file = await _getCacheFile(profileId);
       if (await file.exists()) {

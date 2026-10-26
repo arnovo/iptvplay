@@ -27,6 +27,13 @@ class EpgProvider extends ChangeNotifier {
   }
 
   Future<void> loadEpg(PlaylistProfile profile, {bool forceRefresh = false}) async {
+    if (kIsWeb) {
+      _epgData = {};
+      _isLoading = false;
+      notifyListeners();
+      return;
+    }
+
     _isLoading = true;
     notifyListeners();
 

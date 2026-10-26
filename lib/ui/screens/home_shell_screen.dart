@@ -134,7 +134,9 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
     await profileProvider.loadProfiles();
     if (mounted && profileProvider.activeProfile != null) {
       context.read<CatalogProvider>().loadCatalog(profileProvider.activeProfile!);
-      context.read<EpgProvider>().loadEpg(profileProvider.activeProfile!);
+      if (!kIsWeb) {
+        context.read<EpgProvider>().loadEpg(profileProvider.activeProfile!);
+      }
     }
     if (mounted) {
       _checkPausedDownloadsOnStartup();

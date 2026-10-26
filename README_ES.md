@@ -76,6 +76,7 @@
 ### 📡 11. Reenvío de Video en Red Local (LAN Stream Server / Cast)
 - Servidor HTTP embebido en el puerto `8088` (`http://<ip-local>:8088/stream`) con soporte CORS.
 - Permite reenviar el canal o video que estás viendo para reproducirlo en Smart TVs, VLC, Kodi u otros dispositivos de la misma red local sin consumir conexiones adicionales del proveedor IPTV.
+- *(Nota: Función exclusiva para plataformas de escritorio y móviles; en la versión Web se omite automáticamente).*
 
 ### 🔄 12. Ordenación Persistente
 - Ordena canales, películas y series según tu preferencia:
@@ -115,6 +116,21 @@
 * **Almacenamiento Cifrado de Credenciales (Keystore / Keychain):** Cifrado seguro de credenciales sensibles (como contraseñas del panel Xtream) empleando almacenamiento protegido por hardware (`flutter_secure_storage` mediante Apple Keychain y Android Keystore) en lugar de almacenamiento plano sin cifrar.
 * **Sanitización Estricta de URLs y Protección Anti-SSRF:** Validación rigurosa de que las URLs comiencen exclusivamente por `http://` o `https://` (rechazando esquemas no seguros como `file://`, `javascript://` o `content://`), con bloqueo proactivo de redirecciones maliciosas hacia IPs locales o de loopback (`localhost`, `127.0.0.1`, `::1`) desde el cliente HTTP.
 * **Sandbox Seguro:** Entitlements del sandbox de macOS que restringen estrictamente el acceso a sockets de red y archivos seleccionados por el usuario.
+
+---
+
+## 🚀 Compilación y Despliegue
+
+```bash
+# Compilación para macOS
+flutter build macos --release
+
+# Compilación para Android TV y Fire TV
+flutter build apk --release
+
+# Compilación para Web (PWA / Navegadores)
+flutter build web --release
+```
 
 ---
 

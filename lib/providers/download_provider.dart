@@ -58,6 +58,12 @@ class DownloadProvider extends ChangeNotifier {
 
   Future<void> _init() async {
     if (_isInitialized) return;
+    if (kIsWeb) {
+      _isInitialized = true;
+      if (!_initCompleter.isCompleted) _initCompleter.complete();
+      notifyListeners();
+      return;
+    }
     _items = await _service.loadDownloadsMetadata();
     final List<DownloadItem> valid = [];
     bool metadataChanged = false;

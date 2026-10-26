@@ -166,6 +166,7 @@ class PlaybackProvider extends ChangeNotifier {
 
     await _player.open(Media(streamUrl));
     await _applyBufferProfileToPlayer();
+    await _player.setVolume(_isMuted ? 0.0 : _volume);
 
     if (initialPositionSeconds != null && initialPositionSeconds > 0 && !isLive) {
       await _player.seek(Duration(seconds: initialPositionSeconds));

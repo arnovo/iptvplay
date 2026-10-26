@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
@@ -237,8 +238,9 @@ class PlayerTopBar extends StatelessWidget {
                 );
               },
             ),
-          // Cast / LAN Stream Reforward Button
-          Consumer<StreamServerProvider>(
+          // Cast / LAN Stream Reforward Button (Solo en plataformas nativas)
+          if (!kIsWeb)
+            Consumer<StreamServerProvider>(
             builder: (context, streamServer, _) {
               final isSharing = streamServer.isRunning;
               return IconButton(

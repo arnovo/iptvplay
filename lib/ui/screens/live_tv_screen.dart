@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/catalog_provider.dart';
@@ -157,34 +158,36 @@ class LiveTvScreen extends StatelessWidget {
                       ],
                       onSelected: (opt) => catalog.setLiveSort(opt),
                     ),
-                    const SizedBox(width: 8),
-                    // Botón Guía EPG en Cuadrícula
-                    TvFocusable(
-                      borderRadius: BorderRadius.circular(8),
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const EpgGridScreen()),
-                        );
-                      },
-                      builder: (context, isFocused, isHovered) {
-                        return Container(
-                          decoration: BoxDecoration(
-                            color: isFocused ? AppTheme.primary.withValues(alpha: 0.2) : AppTheme.surfaceLight,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: isFocused ? AppTheme.primary : AppTheme.border),
-                          ),
-                          child: IconButton(
-                            icon: const Icon(Icons.grid_on_rounded, color: AppTheme.primary, size: 20),
-                            tooltip: 'Guía de Programación en Cuadrícula (EPG)',
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const EpgGridScreen()),
-                              );
-                            },
-                          ),
-                        );
-                      },
-                    ),
+                    if (!kIsWeb) ...[
+                      const SizedBox(width: 8),
+                      // Botón Guía EPG en Cuadrícula
+                      TvFocusable(
+                        borderRadius: BorderRadius.circular(8),
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const EpgGridScreen()),
+                          );
+                        },
+                        builder: (context, isFocused, isHovered) {
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: isFocused ? AppTheme.primary.withValues(alpha: 0.2) : AppTheme.surfaceLight,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: isFocused ? AppTheme.primary : AppTheme.border),
+                            ),
+                            child: IconButton(
+                              icon: const Icon(Icons.grid_on_rounded, color: AppTheme.primary, size: 20),
+                              tooltip: 'Guía de Programación en Cuadrícula (EPG)',
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(builder: (_) => const EpgGridScreen()),
+                                );
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                     const SizedBox(width: 8),
                     TvFocusable(
                       borderRadius: BorderRadius.circular(8),
@@ -393,17 +396,18 @@ class LiveTvScreen extends StatelessWidget {
                                   trailing: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      // EPG Guide Button
-                                      IconButton(
-                                        icon: const Icon(Icons.event_note, color: AppTheme.textSecondary, size: 20),
-                                        tooltip: l10n.channelSchedule,
-                                        onPressed: () {
-                                          showDialog(
-                                            context: context,
-                                            builder: (_) => ChannelEpgDialog(channel: channel),
-                                          );
-                                        },
-                                      ),
+                                      // EPG Guide Button (Oculto en Web)
+                                      if (!kIsWeb)
+                                        IconButton(
+                                          icon: const Icon(Icons.event_note, color: AppTheme.textSecondary, size: 20),
+                                          tooltip: l10n.channelSchedule,
+                                          onPressed: () {
+                                            showDialog(
+                                              context: context,
+                                              builder: (_) => ChannelEpgDialog(channel: channel),
+                                            );
+                                          },
+                                        ),
                                       // Catch-up / Replay Button
                                       if (activeProfile != null)
                                         IconButton(

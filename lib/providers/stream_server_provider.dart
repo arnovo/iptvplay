@@ -36,6 +36,7 @@ class StreamServerProvider extends ChangeNotifier {
     required String targetStreamUrl,
     required String title,
   }) async {
+    if (kIsWeb) return null;
     final url = await _server.startServer(
       targetStreamUrl: targetStreamUrl,
       title: title,

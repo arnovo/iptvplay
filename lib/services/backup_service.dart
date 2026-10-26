@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:crypto/crypto.dart';
 import 'package:encrypt/encrypt.dart' as enc;
 import 'package:file_picker/file_picker.dart';
@@ -155,13 +155,15 @@ class BackupService {
       }
     } catch (_) {}
 
-    // Fallback to user Downloads if dialog cancelled or returns null on some platforms
-    final downloadsDir = await getDownloadsDirectory();
-    if (downloadsDir != null) {
-      final selectedPath = '${downloadsDir.path}/$filename';
-      final file = File(selectedPath);
-      await file.writeAsString(jsonString);
-      return selectedPath;
+    // Fallback to user Downloads if dialog cancelled or returns null on some platforms (solo en escritorio)
+    if (!kIsWeb) {
+      final downloadsDir = await getDownloadsDirectory();
+      if (downloadsDir != null) {
+        final selectedPath = '${downloadsDir.path}/$filename';
+        final file = File(selectedPath);
+        await file.writeAsString(jsonString);
+        return selectedPath;
+      }
     }
     return null;
   }

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:xml/xml.dart';
@@ -8,13 +9,14 @@ import 'url_sanitizer_service.dart';
 
 class EpgService {
   final Dio _dio;
+  static final Map<String, Map<String, List<EpgProgram>>> _webEpgMemoryCache = {};
 
   EpgService({Dio? dio})
       : _dio = dio ??
             Dio(
               BaseOptions(
-                connectTimeout: const Duration(seconds: 20),
-                receiveTimeout: const Duration(seconds: 40),
+                connectTimeout: const Duration(seconds: 60),
+                receiveTimeout: const Duration(seconds: 120),
                 headers: {
                   'User-Agent': 'IPTVPlay/1.0.0 (Darwin; Apple Silicon)',
                 },
@@ -56,6 +58,7 @@ class EpgService {
 
   /// Downloads and parses XMLTV file (supports both raw .xml and compressed .xml.gz)
   Future<Map<String, List<EpgProgram>>> fetchAndParseXmltv(String url, {String? profileId}) async {
+    if (kIsWeb) return {};
     try {
       final response = await _dio.get<List<int>>(url);
       if (response.data == null) return {};
@@ -184,6 +187,10 @@ class EpgService {
 
   /// Disk Caching
   Future<void> saveEpgCache(String profileId, Map<String, List<EpgProgram>> programs) async {
+    if (kIsWeb) {
+      _webEpgMemoryCache[profileId] = programs;
+      return;
+    }
     try {
       final dir = await getApplicationDocumentsDirectory();
       final cacheDir = Directory('${dir.path}/iptv_cache');
@@ -200,6 +207,9 @@ class EpgService {
   }
 
   Future<Map<String, List<EpgProgram>>> loadEpgCache(String profileId) async {
+    if (kIsWeb) {
+      return _webEpgMemoryCache[profileId] ?? {};
+    }
     try {
       final dir = await getApplicationDocumentsDirectory();
       final file = File('${dir.path}/iptv_cache/epg_$profileId.json');

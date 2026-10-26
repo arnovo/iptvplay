@@ -48,6 +48,7 @@ mindmap
 | **Apple Mac** | • **Apple Silicon:** M1, M2, M3, M4 (Pro / Max)<br>• **Intel:** Cualquier Mac 64-bit | `macOS 11.0`<br>*(Big Sur o sup.)* | **Universal**<br>`arm64` + `x86_64` | `IPTV Play.app` o `.zip`<br>*(Autocontenido con mpv y codecs)* |
 | **PC Windows** | • Sobremesa, portátiles, mini PCs y Surface | `Windows 10 / 11`<br>*(64-bit)* | `x64` | Carpeta ejecutable / `.exe` |
 | **Móviles y Tablets** | • Dispositivos Samsung, Xiaomi, Pixel, etc.<br>• iPhone y iPad | `Android 5.0+`<br>`iOS 12.0+` | `arm64` | • Android: `app-release.apk`<br>• iOS: Proyecto compilable en Xcode |
+| **Navegadores Web** | • Chrome, Edge, Safari, Firefox | Estándar Web (Wasm / Canvas) | `wasm32` / `js` | Despliegue PWA / `build/web`<br>*(Sin retransmisión local en LAN)* |
 
 ---
 

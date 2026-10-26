@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/app_log.dart';
 
@@ -27,23 +28,29 @@ class LogService {
   }
 
   Future<void> _init() async {
-    try {
-      final file = await _getLogFile();
-      if (await file.exists()) {
-        final content = await file.readAsString();
-        final List list = jsonDecode(content);
-        _logs.clear();
-        _logs.addAll(list.map((j) => AppLog.fromJson(j)));
-        _logStreamController.add(_logs);
-      }
-    } catch (_) {}
+    if (!kIsWeb) {
+      try {
+        final file = await _getLogFile();
+        if (await file.exists()) {
+          final content = await file.readAsString();
+          final List list = jsonDecode(content);
+          _logs.clear();
+          _logs.addAll(list.map((j) => AppLog.fromJson(j)));
+          _logStreamController.add(_logs);
+        }
+      } catch (_) {}
+    }
+
+    final osInfo = kIsWeb
+        ? 'Navegador Web'
+        : 'OS: ${Platform.operatingSystem} (${Platform.version})';
 
     // Add startup log
     log(
       level: LogLevel.info,
       category: LogCategory.system,
       message: 'IPTV Play iniciado',
-      details: 'OS: ${Platform.operatingSystem} (${Platform.version})',
+      details: osInfo,
     );
   }
 
@@ -89,6 +96,7 @@ class LogService {
 
   Timer? _persistDebounce;
   void _schedulePersist() {
+    if (kIsWeb) return;
     _persistDebounce?.cancel();
     _persistDebounce = Timer(const Duration(seconds: 2), () async {
       try {
@@ -102,12 +110,14 @@ class LogService {
   Future<void> clearLogs() async {
     _logs.clear();
     _logStreamController.add(_logs);
-    try {
-      final file = await _getLogFile();
-      if (await file.exists()) {
-        await file.delete();
-      }
-    } catch (_) {}
+    if (!kIsWeb) {
+      try {
+        final file = await _getLogFile();
+        if (await file.exists()) {
+          await file.delete();
+        }
+      } catch (_) {}
+    }
   }
 
   String exportFormattedText() {

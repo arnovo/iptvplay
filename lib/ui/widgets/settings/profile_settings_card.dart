@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../l10n/app_localizations.dart';
@@ -162,7 +163,9 @@ class ProfileSettingsCard extends StatelessWidget {
                       ? null
                       : () {
                           catalogProvider.loadCatalog(activeProfile);
-                          context.read<EpgProvider>().loadEpg(activeProfile, forceRefresh: true);
+                          if (!kIsWeb) {
+                            context.read<EpgProvider>().loadEpg(activeProfile, forceRefresh: true);
+                          }
                         },
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),

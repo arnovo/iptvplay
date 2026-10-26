@@ -31,8 +31,8 @@ class M3uParserService {
       : _dio = dio ??
             Dio(
               BaseOptions(
-                connectTimeout: const Duration(seconds: 20),
-                receiveTimeout: const Duration(seconds: 40),
+                connectTimeout: const Duration(seconds: 60),
+                receiveTimeout: const Duration(seconds: 120),
                 headers: {
                   'User-Agent': 'IPTVSmartersPro/3.1.5.1 (Linux; Android 12) AppleWebKit/537.36',
                 },

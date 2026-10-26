@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:dio/dio.dart';
 import '../models/app_log.dart';
 import 'log_service.dart';
@@ -50,20 +49,23 @@ class UrlSanitizerService {
       }
     }
 
-    if (host == 'localhost' || host == '0.0.0.0') {
+    if (host == 'localhost' || host == '0.0.0.0' || host == '::1' || host == '0:0:0:0:0:0:0:1') {
       return true;
     }
 
-    final ip = InternetAddress.tryParse(host);
-    if (ip != null) {
-      if (ip.isLoopback || ip.isLinkLocal) {
-        return true;
-      }
-      // Check 127.0.0.0/8 loopback range explicitly
-      if (ip.type == InternetAddressType.IPv4) {
-        if (ip.address.startsWith('127.')) return true;
-        // AWS / GCP / Azure metadata endpoint
-        if (ip.address == '169.254.169.254') return true;
+    // Platform-agnostic IPv4 loopback, link-local and cloud metadata check
+    final ipv4Parts = host.split('.');
+    if (ipv4Parts.length == 4) {
+      final numbers = ipv4Parts.map(int.tryParse).toList();
+      if (numbers.every((n) => n != null && n >= 0 && n <= 255)) {
+        final b0 = numbers[0]!;
+        final b1 = numbers[1]!;
+        // 127.0.0.0/8 loopback range
+        if (b0 == 127) return true;
+        // 0.0.0.0
+        if (b0 == 0) return true;
+        // 169.254.0.0/16 link-local and cloud metadata (169.254.169.254)
+        if (b0 == 169 && b1 == 254) return true;
       }
     }
 

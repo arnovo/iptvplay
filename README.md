@@ -7,7 +7,7 @@
 [![Flutter](https://img.shields.io/badge/Flutter-3.47+-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-3.13+-0175C2?style=for-the-badge&logo=dart&logoColor=white)](https://dart.dev)
 [![Tests](https://img.shields.io/badge/Tests-32%20Passed-10B981?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com)
-[![Platform](https://img.shields.io/badge/Platforms-macOS%20%7C%20Android%20TV%20%7C%20Fire%20TV%20%7C%20Windows-00E5FF?style=for-the-badge)](COMPATIBILIDAD.md)
+[![Platform](https://img.shields.io/badge/Platforms-macOS%20%7C%20Android%20TV%20%7C%20Fire%20TV%20%7C%20Windows%20%7C%20Web-00E5FF?style=for-the-badge)](COMPATIBILITY.md)
 [![License](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)](LICENSE)
 
 [Español (README_ES.md)](README_ES.md) • [Compatibility Guide](COMPATIBILITY.md) • [User Manual](USER_MANUAL.md)
@@ -150,6 +150,13 @@ Output: `build/macos/Build/Products/Release/IPTV Play.app`
 flutter build apk --release
 ```
 Output: `build/app/outputs/flutter-apk/app-release.apk`
+
+#### 🌐 Web (PWA / Browser)
+```bash
+flutter build web --release
+```
+Output: `build/web/`
+*(Note: Stream sharing on LAN is an exclusive native feature and is omitted in the browser).*
 
 ---
 
