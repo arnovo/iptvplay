@@ -10,15 +10,16 @@ import 'package:window_manager/window_manager.dart';
 import '../../providers/user_activity_provider.dart';
 import '../../providers/download_provider.dart';
 import '../../providers/stream_server_provider.dart';
+import '../../providers/playback_provider.dart';
 import '../../models/app_log.dart';
 import '../../services/log_service.dart';
 import '../widgets/lan_stream_dialog.dart';
 import '../theme/app_theme.dart';
 
 class PlayerScreen extends StatefulWidget {
-  final String streamUrl;
-  final String title;
-  final bool isLive;
+  final String? streamUrl;
+  final String? title;
+  final bool? isLive;
   final String? contentId;
   final String? type; // 'live', 'vod', 'series'
   final String? posterUrl;
@@ -26,9 +27,9 @@ class PlayerScreen extends StatefulWidget {
 
   const PlayerScreen({
     super.key,
-    required this.streamUrl,
-    required this.title,
-    this.isLive = false,
+    this.streamUrl,
+    this.title,
+    this.isLive,
     this.contentId,
     this.type,
     this.posterUrl,
@@ -42,6 +43,21 @@ class PlayerScreen extends StatefulWidget {
 class _PlayerScreenState extends State<PlayerScreen> {
   late final Player _player;
   late final VideoController _controller;
+  final List<StreamSubscription> _localSubscriptions = [];
+
+  String get _title => widget.title ?? context.read<PlaybackProvider>().currentTitle ?? '';
+  String get _streamUrl => widget.streamUrl ?? context.read<PlaybackProvider>().currentStreamUrl ?? '';
+  bool get _isLive => widget.isLive ?? context.read<PlaybackProvider>().isLive;
+  String? get _posterUrl => widget.posterUrl ?? context.read<PlaybackProvider>().currentPosterUrl;
+  String? get _contentId => widget.contentId ?? context.read<PlaybackProvider>().currentContentId;
+  String? get _type => widget.type ?? context.read<PlaybackProvider>().currentType;
+
+  // Continuous seek with arrow keys
+  Timer? _continuousSeekTimer;
+  LogicalKeyboardKey? _activeSeekKey;
+  int _accumulatedSeekSeconds = 0;
+  String? _seekFeedbackText;
+  Timer? _feedbackTimer;
 
   bool _showControls = true;
   Timer? _controlsTimer;
@@ -86,23 +102,25 @@ class _PlayerScreenState extends State<PlayerScreen> {
     final provider = _streamServerProvider;
     if (provider == null || !mounted) return;
 
-    if (provider.isRunning && provider.targetStreamUrl == widget.streamUrl) {
+    if (provider.isRunning && provider.targetStreamUrl == _streamUrl) {
       final localUrl = provider.localStreamUrl;
       if (localUrl != null && _currentPlayingUrl != localUrl) {
         _currentPlayingUrl = localUrl;
         _player.open(Media(localUrl));
       }
-    } else if (!provider.isRunning && _currentPlayingUrl != widget.streamUrl) {
-      _currentPlayingUrl = widget.streamUrl;
-      _player.open(Media(widget.streamUrl));
+    } else if (!provider.isRunning && _currentPlayingUrl != _streamUrl) {
+      _currentPlayingUrl = _streamUrl;
+      _player.open(Media(_streamUrl));
     }
   }
 
   @override
   void initState() {
     super.initState();
-    _player = Player();
-    _controller = VideoController(_player);
+    final playback = context.read<PlaybackProvider>();
+    _player = playback.player;
+    _controller = playback.videoController;
+    playback.setPlayerScreenOpen(true);
 
     _checkInitialFullScreen();
     _initPlayer();
@@ -133,41 +151,50 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   Future<void> _initPlayer() async {
     try {
-      LogService.instance.info(
-        LogCategory.player,
-        'Reproduciendo: ${widget.title}',
-        details: 'Tipo: ${widget.isLive ? "En vivo" : (widget.type ?? "VOD")} • URL: ${widget.streamUrl}',
+      final playback = context.read<PlaybackProvider>();
+
+      _localSubscriptions.add(
+        _player.stream.buffering.listen((buffering) {
+          if (mounted) setState(() => _isBuffering = buffering);
+        }),
       );
 
-      _player.stream.buffering.listen((buffering) {
-        if (mounted) setState(() => _isBuffering = buffering);
-      });
+      _localSubscriptions.add(
+        _player.stream.tracks.listen((_) {
+          if (mounted) setState(() {});
+        }),
+      );
 
-      _player.stream.tracks.listen((_) {
-        if (mounted) setState(() {});
-      });
+      _localSubscriptions.add(
+        _player.stream.error.listen((error) {
+          if (mounted && error.isNotEmpty) {
+            LogService.instance.error(
+              LogCategory.player,
+              'Error de reproducción en: $_title',
+              details: error,
+            );
+            setState(() => _errorMessage = error);
+          }
+        }),
+      );
 
-      _player.stream.error.listen((error) {
-        if (mounted && error.isNotEmpty) {
-          LogService.instance.error(
-            LogCategory.player,
-            'Error de reproducción en: ${widget.title}',
-            details: error,
-          );
-          setState(() => _errorMessage = error);
-        }
-      });
-
-      _currentPlayingUrl = widget.streamUrl;
-      await _player.open(Media(widget.streamUrl));
-
-      // Auto-resume if position was passed
-      if (!widget.isLive && widget.initialPositionSeconds != null && widget.initialPositionSeconds! > 10) {
-        await _player.seek(Duration(seconds: widget.initialPositionSeconds!));
+      if (widget.streamUrl != null && widget.title != null) {
+        _currentPlayingUrl = widget.streamUrl;
+        await playback.play(
+          streamUrl: widget.streamUrl!,
+          title: widget.title!,
+          isLive: widget.isLive ?? false,
+          posterUrl: widget.posterUrl,
+          contentId: widget.contentId,
+          type: widget.type,
+          initialPositionSeconds: widget.initialPositionSeconds,
+        );
+      } else {
+        _currentPlayingUrl = playback.currentStreamUrl;
       }
 
       // Periodically save progress every 5 seconds for VOD & Series
-      if (!widget.isLive && widget.contentId != null) {
+      if (!_isLive && _contentId != null) {
         _progressSaveTimer = Timer.periodic(const Duration(seconds: 5), (_) {
           _saveCurrentProgress();
         });
@@ -177,7 +204,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     } catch (e) {
       LogService.instance.error(
         LogCategory.player,
-        'Fallo al inicializar reproductor para ${widget.title}',
+        'Fallo al inicializar reproductor para $_title',
         details: e.toString(),
       );
       if (mounted) setState(() => _errorMessage = e.toString());
@@ -185,18 +212,19 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   void _saveCurrentProgress() {
-    if (widget.contentId == null || widget.isLive) return;
+    final cid = _contentId;
+    if (cid == null || _isLive) return;
     final pos = _player.state.position.inSeconds;
     final dur = _player.state.duration.inSeconds;
     if (dur > 0 && pos > 0) {
       context.read<UserActivityProvider>().saveProgress(
-        id: widget.contentId!,
-        title: widget.title,
-        url: widget.streamUrl,
-        posterUrl: widget.posterUrl,
+        id: cid,
+        title: _title,
+        url: _streamUrl,
+        posterUrl: _posterUrl,
         positionSeconds: pos,
         durationSeconds: dur,
-        type: widget.type ?? 'vod',
+        type: _type ?? 'vod',
       );
     }
   }
@@ -244,83 +272,86 @@ class _PlayerScreenState extends State<PlayerScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (ctx) {
-        return Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Row(
-                children: [
-                  Icon(Icons.aspect_ratio, color: AppTheme.primary),
-                  SizedBox(width: 10),
-                  Text(
-                    'Formato y Modo de Pantalla',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              ListTile(
-                dense: true,
-                leading: const Icon(Icons.fullscreen, color: AppTheme.primary),
-                title: const Text('Pantalla completa (Llenar / Zoom)', style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: const Text('Llena toda la pantalla sin bordes negros', style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
-                trailing: _aspectRatioFit == BoxFit.cover ? const Icon(Icons.check, color: AppTheme.primary) : null,
-                onTap: () {
-                  setState(() {
-                    _aspectRatioFit = BoxFit.cover;
-                    _aspectRatioName = 'Completa';
-                  });
-                  Navigator.of(ctx).pop();
-                  _startControlsTimer();
-                },
-              ),
-              ListTile(
-                dense: true,
-                leading: const Icon(Icons.fit_screen, color: AppTheme.primary),
-                title: const Text('Ajustar a pantalla (Original)', style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: const Text('Mantiene la proporción nativa del vídeo', style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
-                trailing: _aspectRatioFit == BoxFit.contain ? const Icon(Icons.check, color: AppTheme.primary) : null,
-                onTap: () {
-                  setState(() {
-                    _aspectRatioFit = BoxFit.contain;
-                    _aspectRatioName = 'Ajustar';
-                  });
-                  Navigator.of(ctx).pop();
-                  _startControlsTimer();
-                },
-              ),
-              ListTile(
-                dense: true,
-                leading: const Icon(Icons.aspect_ratio, color: AppTheme.primary),
-                title: const Text('Estirar (16:9)', style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: const Text('Escala la imagen a formato panorámico', style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
-                trailing: _aspectRatioFit == BoxFit.fill ? const Icon(Icons.check, color: AppTheme.primary) : null,
-                onTap: () {
-                  setState(() {
-                    _aspectRatioFit = BoxFit.fill;
-                    _aspectRatioName = 'Estirar';
-                  });
-                  Navigator.of(ctx).pop();
-                  _startControlsTimer();
-                },
-              ),
-              const Divider(color: AppTheme.border),
-              ListTile(
-                dense: true,
-                leading: Icon(_isFullScreen ? Icons.fullscreen_exit : Icons.fullscreen, color: AppTheme.accentGreen),
-                title: Text(
-                  _isFullScreen ? 'Salir de pantalla completa (Ventana)' : 'Activar pantalla completa (Ventana)',
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.accentGreen),
+        return Material(
+          color: Colors.transparent,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.aspect_ratio, color: AppTheme.primary),
+                    SizedBox(width: 10),
+                    Text(
+                      'Formato y Modo de Pantalla',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ],
                 ),
-                subtitle: const Text('Maximiza la ventana ocupando todo tu monitor (o pulsa tecla F)', style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
-                onTap: () {
-                  Navigator.of(ctx).pop();
-                  _toggleFullScreen();
-                },
-              ),
-            ],
+                const SizedBox(height: 12),
+                ListTile(
+                  dense: true,
+                  leading: const Icon(Icons.fullscreen, color: AppTheme.primary),
+                  title: const Text('Pantalla completa (Llenar / Zoom)', style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Llena toda la pantalla sin bordes negros', style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+                  trailing: _aspectRatioFit == BoxFit.cover ? const Icon(Icons.check, color: AppTheme.primary) : null,
+                  onTap: () {
+                    setState(() {
+                      _aspectRatioFit = BoxFit.cover;
+                      _aspectRatioName = 'Completa';
+                    });
+                    Navigator.of(ctx).pop();
+                    _startControlsTimer();
+                  },
+                ),
+                ListTile(
+                  dense: true,
+                  leading: const Icon(Icons.fit_screen, color: AppTheme.primary),
+                  title: const Text('Ajustar a pantalla (Original)', style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Mantiene la proporción nativa del vídeo', style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+                  trailing: _aspectRatioFit == BoxFit.contain ? const Icon(Icons.check, color: AppTheme.primary) : null,
+                  onTap: () {
+                    setState(() {
+                      _aspectRatioFit = BoxFit.contain;
+                      _aspectRatioName = 'Ajustar';
+                    });
+                    Navigator.of(ctx).pop();
+                    _startControlsTimer();
+                  },
+                ),
+                ListTile(
+                  dense: true,
+                  leading: const Icon(Icons.aspect_ratio, color: AppTheme.primary),
+                  title: const Text('Estirar (16:9)', style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Escala la imagen a formato panorámico', style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+                  trailing: _aspectRatioFit == BoxFit.fill ? const Icon(Icons.check, color: AppTheme.primary) : null,
+                  onTap: () {
+                    setState(() {
+                      _aspectRatioFit = BoxFit.fill;
+                      _aspectRatioName = 'Estirar';
+                    });
+                    Navigator.of(ctx).pop();
+                    _startControlsTimer();
+                  },
+                ),
+                const Divider(color: AppTheme.border),
+                ListTile(
+                  dense: true,
+                  leading: Icon(_isFullScreen ? Icons.fullscreen_exit : Icons.fullscreen, color: AppTheme.accentGreen),
+                  title: Text(
+                    _isFullScreen ? 'Salir de pantalla completa (Ventana)' : 'Activar pantalla completa (Ventana)',
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.accentGreen),
+                  ),
+                  subtitle: const Text('Maximiza la ventana ocupando todo tu monitor (o pulsa tecla F)', style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+                  onTap: () {
+                    Navigator.of(ctx).pop();
+                    _toggleFullScreen();
+                  },
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -641,8 +672,61 @@ class _PlayerScreenState extends State<PlayerScreen> {
     return duration.inHours > 0 ? '$hours:$minutes:$seconds' : '$minutes:$seconds';
   }
 
+  void _triggerSingleSeek(int seconds) {
+    if (_isLive) return;
+    final pos = _player.state.position;
+    final dur = _player.state.duration;
+    Duration target = pos + Duration(seconds: seconds);
+    if (target < Duration.zero) target = Duration.zero;
+    if (dur > Duration.zero && target > dur) target = dur;
+    _player.seek(target);
+
+    _accumulatedSeekSeconds += seconds;
+    final sign = _accumulatedSeekSeconds > 0 ? '+' : '';
+    setState(() {
+      _seekFeedbackText = '$sign${_accumulatedSeekSeconds}s';
+    });
+
+    _feedbackTimer?.cancel();
+    _feedbackTimer = Timer(const Duration(milliseconds: 700), () {
+      if (mounted) {
+        setState(() {
+          _seekFeedbackText = null;
+          _accumulatedSeekSeconds = 0;
+        });
+      }
+    });
+    _startControlsTimer();
+  }
+
+  void _handleSeekKeyDown(int seconds) {
+    if (_isLive) return;
+    final key = seconds > 0 ? LogicalKeyboardKey.arrowRight : LogicalKeyboardKey.arrowLeft;
+    if (_activeSeekKey == key) return;
+    _activeSeekKey = key;
+
+    _triggerSingleSeek(seconds);
+
+    _continuousSeekTimer?.cancel();
+    // Start continuous seek with delay (350ms) then repeating every 160ms as long as held
+    _continuousSeekTimer = Timer(const Duration(milliseconds: 350), () {
+      _continuousSeekTimer = Timer.periodic(const Duration(milliseconds: 160), (_) {
+        _triggerSingleSeek(seconds);
+      });
+    });
+  }
+
+  void _handleSeekKeyUp(LogicalKeyboardKey key) {
+    if (_activeSeekKey == key) {
+      _activeSeekKey = null;
+      _continuousSeekTimer?.cancel();
+      _continuousSeekTimer = null;
+    }
+  }
+
   @override
   void dispose() {
+    context.read<PlaybackProvider>().setPlayerScreenOpen(false);
     _streamServerProvider?.removeListener(_onServerStateChanged);
     _saveCurrentProgress();
     if (_isFullScreen) {
@@ -655,7 +739,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
     _controlsTimer?.cancel();
     _progressSaveTimer?.cancel();
     _flashTimer?.cancel();
-    _player.dispose();
+    _continuousSeekTimer?.cancel();
+    _feedbackTimer?.cancel();
+    for (final sub in _localSubscriptions) {
+      sub.cancel();
+    }
+    _localSubscriptions.clear();
     super.dispose();
   }
 
@@ -682,14 +771,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
               _toggleMute();
               return KeyEventResult.handled;
             } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-              final pos = _player.state.position;
-              _player.seek(pos + const Duration(seconds: 10));
-              _startControlsTimer();
+              _handleSeekKeyDown(10);
               return KeyEventResult.handled;
             } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-              final pos = _player.state.position;
-              _player.seek(pos - const Duration(seconds: 10));
-              _startControlsTimer();
+              _handleSeekKeyDown(-10);
               return KeyEventResult.handled;
             } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
               setState(() {
@@ -706,6 +791,20 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 _player.setVolume(_volume);
               });
               _startControlsTimer();
+              return KeyEventResult.handled;
+            }
+          } else if (event is KeyUpEvent) {
+            if (event.logicalKey == LogicalKeyboardKey.arrowRight ||
+                event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+              _handleSeekKeyUp(event.logicalKey);
+              return KeyEventResult.handled;
+            }
+          } else if (event is KeyRepeatEvent) {
+            if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+              _triggerSingleSeek(10);
+              return KeyEventResult.handled;
+            } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+              _triggerSingleSeek(-10);
               return KeyEventResult.handled;
             }
           }
@@ -755,6 +854,45 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   ),
                 ),
 
+              // Continuous Seek Feedback Indicator
+              if (_seekFeedbackText != null)
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.8),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppTheme.primary.withValues(alpha: 0.6)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primary.withValues(alpha: 0.3),
+                          blurRadius: 16,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _accumulatedSeekSeconds > 0 ? Icons.fast_forward : Icons.fast_rewind,
+                          color: AppTheme.primary,
+                          size: 28,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _seekFeedbackText!,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
               // Error display
               if (_errorMessage != null)
                 Center(
@@ -785,7 +923,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                         ElevatedButton.icon(
                           onPressed: () {
                             setState(() => _errorMessage = null);
-                            _player.open(Media(widget.streamUrl));
+                            _player.open(Media(_streamUrl));
                           },
                           icon: const Icon(Icons.refresh),
                           label: const Text('Reintentar'),
@@ -836,6 +974,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+                    tooltip: 'Minimizar a la barra inferior',
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                   const SizedBox(width: 8),
@@ -844,7 +983,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          widget.title,
+                          _title,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,
@@ -853,7 +992,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        if (widget.isLive)
+                        if (_isLive)
                           Row(
                             children: [
                               Container(
@@ -904,10 +1043,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     onPressed: _showSubtitleTracksDialog,
                   ),
                   // Favorite Star Button
-                  if (widget.contentId != null && widget.type != null)
+                  if (_contentId != null && _type != null)
                     Consumer<UserActivityProvider>(
                       builder: (context, activity, _) {
-                        final isFav = activity.isFavorite(widget.contentId!, widget.type!);
+                        final isFav = activity.isFavorite(_contentId!, _type!);
                         return IconButton(
                           icon: Icon(
                             isFav ? Icons.star : Icons.star_border,
@@ -916,17 +1055,17 @@ class _PlayerScreenState extends State<PlayerScreen> {
                           ),
                           tooltip: isFav ? 'Quitar de favoritos' : 'Añadir a favoritos',
                           onPressed: () {
-                            activity.toggleFavorite(widget.contentId!, widget.type!);
+                            activity.toggleFavorite(_contentId!, _type!);
                             _startControlsTimer();
                           },
                         );
                       },
                     ),
                   // Live PVR Record Button
-                  if (widget.isLive && widget.contentId != null)
+                  if (_isLive && _contentId != null)
                     Consumer<DownloadProvider>(
                       builder: (context, downloads, _) {
-                        final isRec = downloads.isChannelRecording(widget.contentId!);
+                        final isRec = downloads.isChannelRecording(_contentId!);
                         return IconButton(
                           icon: Icon(
                             isRec ? Icons.stop_circle : Icons.fiber_manual_record,
@@ -936,18 +1075,18 @@ class _PlayerScreenState extends State<PlayerScreen> {
                           tooltip: isRec ? 'Detener grabación PVR' : 'Grabar transmisión',
                           onPressed: () {
                             downloads.toggleLiveRecording(
-                              channelId: widget.contentId!,
-                              title: widget.title,
-                              streamUrl: widget.streamUrl,
-                              posterUrl: widget.posterUrl,
+                              channelId: _contentId!,
+                              title: _title,
+                              streamUrl: _streamUrl,
+                              posterUrl: _posterUrl,
                             );
                             _startControlsTimer();
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
                                   isRec
-                                      ? 'Grabación de "${widget.title}" detenida y guardada en Descargas'
-                                      : 'Grabando "${widget.title}" en segundo plano...',
+                                      ? 'Grabación de "$_title" detenida y guardada en Descargas'
+                                      : 'Grabando "$_title" en segundo plano...',
                                 ),
                               ),
                             );
@@ -956,10 +1095,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
                       },
                     ),
                   // VOD Offline Download Button
-                  if (!widget.isLive && widget.contentId != null)
+                  if (!_isLive && _contentId != null)
                     Consumer<DownloadProvider>(
                       builder: (context, downloads, _) {
-                        final isDownloaded = downloads.completedItems.any((i) => i.id == widget.contentId);
+                        final isDownloaded = downloads.completedItems.any((i) => i.id == _contentId);
                         return IconButton(
                           icon: Icon(
                             isDownloaded ? Icons.download_done : Icons.download,
@@ -969,18 +1108,18 @@ class _PlayerScreenState extends State<PlayerScreen> {
                           tooltip: isDownloaded ? 'Descargado (clic para abrir carpeta)' : 'Descargar para ver sin conexión',
                           onPressed: isDownloaded
                               ? () {
-                                  final item = downloads.completedItems.where((i) => i.id == widget.contentId).firstOrNull;
+                                  final item = downloads.completedItems.where((i) => i.id == _contentId).firstOrNull;
                                   if (item != null) {
                                     downloads.openItemInFileManager(item);
                                   }
                                 }
                               : () {
                                   downloads.startVodDownload(
-                                    id: widget.contentId!,
-                                    title: widget.title,
-                                    streamUrl: widget.streamUrl,
-                                    type: widget.type ?? 'vod',
-                                    posterUrl: widget.posterUrl,
+                                    id: _contentId!,
+                                    title: _title,
+                                    streamUrl: _streamUrl,
+                                    type: _type ?? 'vod',
+                                    posterUrl: _posterUrl,
                                   );
                                   _startControlsTimer();
                                   ScaffoldMessenger.of(context).showSnackBar(
@@ -1005,8 +1144,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
                           showDialog(
                             context: context,
                             builder: (_) => LanStreamDialog(
-                              title: widget.title,
-                              streamUrl: widget.streamUrl,
+                              title: _title,
+                              streamUrl: _streamUrl,
                             ),
                           );
                           _startControlsTimer();
@@ -1023,6 +1162,15 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     ),
                     tooltip: _isFullScreen ? 'Salir de pantalla completa' : 'Pantalla completa',
                     onPressed: _toggleFullScreen,
+                  ),
+                  // Stop & Close Button
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white70, size: 24),
+                    tooltip: 'Detener y cerrar reproductor',
+                    onPressed: () {
+                      context.read<PlaybackProvider>().stop();
+                      Navigator.of(context).pop();
+                    },
                   ),
                 ],
               ),
@@ -1055,7 +1203,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               child: Column(
                 children: [
-                  if (!widget.isLive) ...[
+                  if (!_isLive) ...[
                     StreamBuilder<Duration>(
                       stream: _player.stream.position,
                       builder: (context, posSnapshot) {
@@ -1111,7 +1259,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   Row(
                     children: [
                       // Playback Speed Button (For VOD/Series)
-                      if (!widget.isLive)
+                      if (!_isLive)
                         TextButton(
                           style: TextButton.styleFrom(
                             foregroundColor: Colors.white,

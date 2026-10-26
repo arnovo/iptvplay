@@ -11,6 +11,7 @@ import 'providers/epg_provider.dart';
 import 'providers/download_provider.dart';
 import 'providers/stream_server_provider.dart';
 import 'providers/log_provider.dart';
+import 'providers/playback_provider.dart';
 import 'ui/theme/app_theme.dart';
 import 'ui/screens/home_shell_screen.dart';
 
@@ -32,6 +33,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => DownloadProvider()),
         ChangeNotifierProvider(create: (_) => StreamServerProvider()),
         ChangeNotifierProvider(create: (_) => LogProvider()),
+        ChangeNotifierProvider(create: (_) => PlaybackProvider()),
       ],
       child: const IptvApp(),
     ),

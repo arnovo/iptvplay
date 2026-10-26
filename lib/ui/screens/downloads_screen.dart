@@ -46,7 +46,7 @@ class DownloadsScreen extends StatelessWidget {
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        '${items.length} archivos disponibles para ver sin conexión a internet',
+                        '${items.length} archivos disponibles • Ocupan en total: ${downloadProvider.formattedTotalStorage}',
                         style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
                       ),
                     ],
@@ -102,6 +102,26 @@ class DownloadsScreen extends StatelessWidget {
                     downloadProvider.currentStoragePath ?? 'Cargando carpeta...',
                     style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
                     overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surface,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: AppTheme.border),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.storage, size: 13, color: AppTheme.primary),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Total: ${downloadProvider.formattedTotalStorage}',
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(width: 12),

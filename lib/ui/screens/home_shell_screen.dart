@@ -17,6 +17,7 @@ import 'logs_screen.dart';
 import 'profile_list_screen.dart';
 import 'add_profile_dialog.dart';
 import '../widgets/backup_dialog.dart';
+import '../widgets/miniplayer_bar.dart';
 
 class HomeShellScreen extends StatefulWidget {
   const HomeShellScreen({super.key});
@@ -160,15 +161,20 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
     final activeProfile = profileProvider.activeProfile;
 
     return Scaffold(
-      body: Row(
+      body: Column(
         children: [
-          // Navigation Rail / Sidebar
-          Container(
-            width: 220,
-            color: AppTheme.surface,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+          Expanded(
+            child: Row(
               children: [
+                // Navigation Rail / Sidebar
+                Container(
+                  width: 220,
+                  color: AppTheme.surface,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
                 // App Logo
                 Padding(
                   padding: const EdgeInsets.all(20),
@@ -337,16 +343,21 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
               ],
             ),
           ),
+        ),
 
-          const VerticalDivider(width: 1, color: AppTheme.border),
+        const VerticalDivider(width: 1, color: AppTheme.border),
 
-          // Main View Content
-          Expanded(
-            child: _buildBody(activeProfile, catalogProvider),
-          ),
-        ],
-      ),
-    );
+        // Main View Content
+        Expanded(
+          child: _buildBody(activeProfile, catalogProvider),
+        ),
+      ],
+    ),
+  ),
+  const MiniplayerBar(),
+],
+),
+);
   }
 
   Widget _buildNavItem({

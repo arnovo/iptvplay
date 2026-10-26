@@ -26,6 +26,32 @@ class DownloadProvider extends ChangeNotifier {
   String? get currentStoragePath => _currentStoragePath;
   bool get hasCustomStoragePath => _customStoragePath != null;
 
+  int get totalStorageBytes {
+    int total = 0;
+    for (final item in _items) {
+      if (item.status == DownloadStatus.completed) {
+        total += item.totalBytes > 0 ? item.totalBytes : item.downloadedBytes;
+      } else if (item.status == DownloadStatus.downloading ||
+          item.status == DownloadStatus.paused ||
+          item.status == DownloadStatus.recording) {
+        total += item.downloadedBytes;
+      }
+    }
+    return total;
+  }
+
+  String get formattedTotalStorage {
+    final bytes = totalStorageBytes;
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    } else if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    } else {
+      return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
+    }
+  }
+
   DownloadProvider() {
     _init();
   }
