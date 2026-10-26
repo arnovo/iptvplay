@@ -55,6 +55,10 @@ When launching the application for the first time, you will be prompted to add y
 3. Click **"Save and Load"**.
 4. That's it! Channels, logos, and Electronic Program Guide (**EPG**) will load in seconds.
 
+<div align="center">
+  <img src="docs/screenshots/welcome_screen.png" alt="IPTV Play Welcome Screen" width="700"/>
+</div>
+
 > [!TIP]
 > You can save **multiple playlists** simultaneously. To switch between profiles, click the profile card in the top-left corner.
 
@@ -69,6 +73,10 @@ When launching the application for the first time, you will be prompted to add y
 3. **Channel Search:** Use the search bar to find any channel by name.
 4. **Play:** Click or press <kbd>OK</kbd> on any channel to launch fullscreen playback.
 5. **Program Guide (EPG):** Each channel displays the current airing show and a live progress bar. Click the calendar icon <kbd>📅</kbd> to inspect the full schedule.
+
+<div align="center">
+  <img src="docs/screenshots/live_player.png" alt="IPTV Play Live TV Player" width="700"/>
+</div>
 
 ---
 

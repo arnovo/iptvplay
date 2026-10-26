@@ -16,6 +16,18 @@
 
 </div>
 
+## 📸 Screenshots
+
+<div align="center">
+
+| 🧭 Main Dashboard & Navigation | 📺 Hardware-Accelerated Live TV (MediaKit) |
+|:---:|:---:|
+| <img src="docs/screenshots/welcome_screen.png" alt="IPTV Play Dashboard" width="480"/> | <img src="docs/screenshots/live_player.png" alt="IPTV Play Live TV Player" width="480"/> |
+
+</div>
+
+---
+
 ## 🌟 Highlights
 
 * **Dual IPTV Protocol:** Full support for both **Xtream Codes API** and raw **M3U / M3U8** playlists.

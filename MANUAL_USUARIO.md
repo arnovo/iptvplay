@@ -55,6 +55,10 @@ Al abrir la aplicación por primera vez, verás la opción de vincular tu provee
 3. Pulsa el botón **"Guardar y Cargar"**.
 4. ¡Listo! En unos segundos se descargarán automáticamente los canales, los logotipos y la guía electrónica de programación (**EPG**).
 
+<div align="center">
+  <img src="docs/screenshots/welcome_screen.png" alt="Pantalla de bienvenida IPTV Play" width="700"/>
+</div>
+
 > [!TIP]
 > Puedes tener **múltiples listas guardadas** simultáneamente. Para cambiar de una lista a otra, simplemente pulsa en la tarjeta de perfil arriba a la izquierda.
 
@@ -69,6 +73,10 @@ Al abrir la aplicación por primera vez, verás la opción de vincular tu provee
 3. **Buscar Canal:** Usa la barra de búsqueda superior para encontrar cualquier canal escribiendo su nombre.
 4. **Reproducir:** Haz clic o pulsa <kbd>OK</kbd> sobre cualquier canal para abrirlo en el reproductor a pantalla completa.
 5. **Guía de Programación (EPG):** Junto a cada canal verás qué programa se está emitiendo ahora mismo y una barra de progreso. Pulsa el icono del calendario <kbd>📅</kbd> para consultar la programación de las próximas horas.
+
+<div align="center">
+  <img src="docs/screenshots/live_player.png" alt="Reproductor de TV en Vivo IPTV Play" width="700"/>
+</div>
 
 ---
 

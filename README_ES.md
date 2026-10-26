@@ -6,6 +6,18 @@
 
 ---
 
+## 📸 Capturas de Pantalla
+
+<div align="center">
+
+| 🧭 Panel Principal y Navegación | 📺 Reproducción de TV en Vivo (MediaKit) |
+|:---:|:---:|
+| <img src="docs/screenshots/welcome_screen.png" alt="Panel Principal de IPTV Play" width="480"/> | <img src="docs/screenshots/live_player.png" alt="Reproductor de TV en Vivo IPTV Play" width="480"/> |
+
+</div>
+
+---
+
 ## 🌟 Características Principales
 
 ### 📺 1. TV en Vivo y Canales
