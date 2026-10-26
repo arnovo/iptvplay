@@ -7,6 +7,7 @@ import '../../providers/profile_provider.dart';
 import '../../providers/download_provider.dart';
 import '../../models/channel.dart';
 import '../../models/sort_option.dart';
+import '../../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../widgets/category_sidebar.dart';
 import '../widgets/channel_epg_dialog.dart';
@@ -27,6 +28,7 @@ class LiveTvScreen extends StatelessWidget {
     final downloadProvider = context.watch<DownloadProvider>();
     final activeProfile = profileProvider.activeProfile;
     final selectedCategory = catalog.selectedLiveCategoryId;
+    final l10n = context.l10n;
 
     List<Channel> channels;
     if (selectedCategory == '__fav__') {
@@ -54,13 +56,13 @@ class LiveTvScreen extends StatelessWidget {
           customTopItems: [
             CategoryCustomItem(
               id: '__fav__',
-              name: 'Favoritos',
+              name: l10n.favorites,
               icon: Icons.star,
               count: userActivity.favLive.length,
             ),
             CategoryCustomItem(
               id: '__recents__',
-              name: 'Recientes',
+              name: l10n.recents,
               icon: Icons.history,
               count: userActivity.recentChannels.length,
             ),
@@ -81,9 +83,9 @@ class LiveTvScreen extends StatelessWidget {
                     Expanded(
                       child: TextField(
                         onChanged: (val) => catalog.setLiveSearch(val),
-                        decoration: const InputDecoration(
-                          hintText: 'Buscar canales en vivo...',
-                          prefixIcon: Icon(Icons.search, color: AppTheme.textMuted),
+                        decoration: InputDecoration(
+                          hintText: l10n.searchChannels,
+                          prefixIcon: const Icon(Icons.search, color: AppTheme.textMuted),
                           isDense: true,
                         ),
                       ),
@@ -106,7 +108,7 @@ class LiveTvScreen extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         ),
                         icon: const Icon(Icons.delete_sweep, size: 16),
-                        label: const Text('Limpiar recientes', style: TextStyle(fontSize: 12)),
+                        label: Text(l10n.clearRecents, style: const TextStyle(fontSize: 12)),
                         onPressed: () {
                           userActivity.clearRecentChannels();
                         },
@@ -120,7 +122,7 @@ class LiveTvScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        '${channels.length} canales',
+                        '${channels.length} ${l10n.isEnglish ? "channels" : "canales"}',
                         style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
                       ),
                     ),
@@ -145,8 +147,10 @@ class LiveTvScreen extends StatelessWidget {
                             const SizedBox(height: 12),
                             Text(
                               selectedCategory == '__fav__'
-                                  ? 'No tienes canales favoritos todavía'
-                                  : 'No se encontraron canales',
+                                  ? (l10n.isEnglish
+                                      ? 'No favorite channels yet'
+                                      : 'No tienes canales favoritos todavía')
+                                  : l10n.noChannelsFound,
                               style: const TextStyle(color: AppTheme.textSecondary),
                             ),
                           ],
@@ -267,7 +271,7 @@ class LiveTvScreen extends StatelessWidget {
                                             const SizedBox(height: 3),
                                           ],
                                           Text(
-                                            channel.groupTitle ?? 'Canal ${channel.channelNumber ?? index + 1}',
+                                            channel.groupTitle ?? '${l10n.isEnglish ? "Channel" : "Canal"} ${channel.channelNumber ?? index + 1}',
                                             style: const TextStyle(color: AppTheme.textMuted, fontSize: 11),
                                           ),
                                         ],
@@ -280,7 +284,7 @@ class LiveTvScreen extends StatelessWidget {
                                       // EPG Guide Button
                                       IconButton(
                                         icon: const Icon(Icons.event_note, color: AppTheme.textSecondary, size: 20),
-                                        tooltip: 'Guía EPG del canal',
+                                        tooltip: l10n.channelSchedule,
                                         onPressed: () {
                                           showDialog(
                                             context: context,
@@ -292,7 +296,7 @@ class LiveTvScreen extends StatelessWidget {
                                       if (activeProfile != null)
                                         IconButton(
                                           icon: const Icon(Icons.history, color: AppTheme.textSecondary, size: 20),
-                                          tooltip: 'Replay TV (Programas anteriores)',
+                                          tooltip: l10n.catchupTitle,
                                           onPressed: () {
                                             showDialog(
                                               context: context,
@@ -310,7 +314,7 @@ class LiveTvScreen extends StatelessWidget {
                                           color: downloadProvider.isChannelRecording(channel.id) ? AppTheme.accentRed : AppTheme.textMuted,
                                           size: 20,
                                         ),
-                                        tooltip: downloadProvider.isChannelRecording(channel.id) ? 'Detener grabación' : 'Grabar en directo',
+                                        tooltip: downloadProvider.isChannelRecording(channel.id) ? l10n.stopRecording : l10n.recordChannel,
                                         onPressed: () {
                                           downloadProvider.toggleLiveRecording(
                                             channelId: channel.id,
@@ -322,8 +326,12 @@ class LiveTvScreen extends StatelessWidget {
                                             SnackBar(
                                               content: Text(
                                                 downloadProvider.isChannelRecording(channel.id)
-                                                    ? 'Grabación de "${channel.name}" detenida y guardada'
-                                                    : 'Grabando "${channel.name}" en segundo plano...',
+                                                    ? (l10n.isEnglish
+                                                        ? 'Recording of "${channel.name}" stopped and saved'
+                                                        : 'Grabación de "${channel.name}" detenida y guardada')
+                                                    : (l10n.isEnglish
+                                                        ? 'Recording "${channel.name}" in background...'
+                                                        : 'Grabando "${channel.name}" en segundo plano...'),
                                               ),
                                             ),
                                           );
@@ -343,7 +351,7 @@ class LiveTvScreen extends StatelessWidget {
                                       if (selectedCategory == '__recents__')
                                         IconButton(
                                           icon: const Icon(Icons.close, color: AppTheme.textMuted, size: 20),
-                                          tooltip: 'Quitar de recientes',
+                                          tooltip: l10n.isEnglish ? 'Remove from recent' : 'Quitar de recientes',
                                           onPressed: () {
                                             userActivity.removeRecentChannel(channel.id);
                                           },

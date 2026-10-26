@@ -3,6 +3,7 @@ import '../../models/catchup_item.dart';
 import '../../models/channel.dart';
 import '../../models/playlist_profile.dart';
 import '../../services/catchup_service.dart';
+import '../../l10n/app_localizations.dart';
 import '../screens/player_screen.dart';
 import '../theme/app_theme.dart';
 
@@ -46,6 +47,8 @@ class _CatchupDialogState extends State<CatchupDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return Dialog(
       backgroundColor: AppTheme.surface,
       shape: RoundedRectangleBorder(
@@ -74,9 +77,9 @@ class _CatchupDialogState extends State<CatchupDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Replay TV (Últimos 7 días)',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      Text(
+                        l10n.catchup7DaysTitle,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       Text(
                         widget.channel.name,
@@ -106,14 +109,14 @@ class _CatchupDialogState extends State<CatchupDialog> {
                             children: [
                               Icon(Icons.tv_off, size: 48, color: AppTheme.textMuted.withValues(alpha: 0.5)),
                               const SizedBox(height: 12),
-                              const Text(
-                                'No hay emisiones grabadas disponibles',
-                                style: TextStyle(color: AppTheme.textSecondary, fontWeight: FontWeight.bold),
+                              Text(
+                                l10n.noRecordedBroadcasts,
+                                style: const TextStyle(color: AppTheme.textSecondary, fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 4),
-                              const Text(
-                                'Este canal o proveedor no soporta Catch-up / Replay TV',
-                                style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
+                              Text(
+                                l10n.noCatchupProviderSupport,
+                                style: const TextStyle(color: AppTheme.textMuted, fontSize: 12),
                                 textAlign: TextAlign.center,
                               ),
                             ],
@@ -167,7 +170,7 @@ class _CatchupDialogState extends State<CatchupDialog> {
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                 ),
                                 icon: const Icon(Icons.play_arrow, size: 16),
-                                label: const Text('Ver', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                label: Text(l10n.watch, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                                 onPressed: () {
                                   Navigator.of(context).pop();
                                   Navigator.of(context).push(

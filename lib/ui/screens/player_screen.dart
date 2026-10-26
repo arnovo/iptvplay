@@ -14,6 +14,7 @@ import '../../providers/playback_provider.dart';
 import '../../models/app_log.dart';
 import '../../services/log_service.dart';
 import '../widgets/lan_stream_dialog.dart';
+import '../../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 
 class PlayerScreen extends StatefulWidget {
@@ -71,7 +72,14 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   // Aspect ratio
   BoxFit _aspectRatioFit = BoxFit.contain;
-  String _aspectRatioName = 'Ajustar';
+  AppLocalizations get l10n => context.l10n;
+
+  String _getAspectRatioName([BuildContext? ctx]) {
+    final loc = ctx != null ? ctx.l10n : l10n;
+    if (_aspectRatioFit == BoxFit.cover) return loc.aspectNameCover;
+    if (_aspectRatioFit == BoxFit.fill) return loc.aspectNameFill;
+    return loc.aspectNameContain;
+  }
 
   // Volume
   double _volume = 100.0;
@@ -269,6 +277,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   void _showScreenFormatDialog() {
+    final l10n = context.l10n;
     showModalBottomSheet(
       context: context,
       backgroundColor: AppTheme.surface,
@@ -284,13 +293,13 @@ class _PlayerScreenState extends State<PlayerScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.aspect_ratio, color: AppTheme.primary),
-                    SizedBox(width: 10),
+                    const Icon(Icons.aspect_ratio, color: AppTheme.primary),
+                    const SizedBox(width: 10),
                     Text(
-                      'Formato y Modo de Pantalla',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      l10n.screenFormatTitle,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -298,13 +307,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 ListTile(
                   dense: true,
                   leading: const Icon(Icons.fullscreen, color: AppTheme.primary),
-                  title: const Text('Pantalla completa (Llenar / Zoom)', style: TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Llena toda la pantalla sin bordes negros', style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+                  title: Text(l10n.aspectCoverTitle, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text(l10n.aspectCoverSubtitle, style: const TextStyle(color: AppTheme.textMuted, fontSize: 11)),
                   trailing: _aspectRatioFit == BoxFit.cover ? const Icon(Icons.check, color: AppTheme.primary) : null,
                   onTap: () {
                     setState(() {
                       _aspectRatioFit = BoxFit.cover;
-                      _aspectRatioName = 'Completa';
                     });
                     Navigator.of(ctx).pop();
                     _startControlsTimer();
@@ -313,13 +321,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 ListTile(
                   dense: true,
                   leading: const Icon(Icons.fit_screen, color: AppTheme.primary),
-                  title: const Text('Ajustar a pantalla (Original)', style: TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Mantiene la proporción nativa del vídeo', style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+                  title: Text(l10n.aspectContainTitle, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text(l10n.aspectContainSubtitle, style: const TextStyle(color: AppTheme.textMuted, fontSize: 11)),
                   trailing: _aspectRatioFit == BoxFit.contain ? const Icon(Icons.check, color: AppTheme.primary) : null,
                   onTap: () {
                     setState(() {
                       _aspectRatioFit = BoxFit.contain;
-                      _aspectRatioName = 'Ajustar';
                     });
                     Navigator.of(ctx).pop();
                     _startControlsTimer();
@@ -328,13 +335,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 ListTile(
                   dense: true,
                   leading: const Icon(Icons.aspect_ratio, color: AppTheme.primary),
-                  title: const Text('Estirar (16:9)', style: TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Escala la imagen a formato panorámico', style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+                  title: Text(l10n.aspectFillTitle, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text(l10n.aspectFillSubtitle, style: const TextStyle(color: AppTheme.textMuted, fontSize: 11)),
                   trailing: _aspectRatioFit == BoxFit.fill ? const Icon(Icons.check, color: AppTheme.primary) : null,
                   onTap: () {
                     setState(() {
                       _aspectRatioFit = BoxFit.fill;
-                      _aspectRatioName = 'Estirar';
                     });
                     Navigator.of(ctx).pop();
                     _startControlsTimer();
@@ -345,10 +351,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   dense: true,
                   leading: Icon(_isFullScreen ? Icons.fullscreen_exit : Icons.fullscreen, color: AppTheme.accentGreen),
                   title: Text(
-                    _isFullScreen ? 'Salir de pantalla completa (Ventana)' : 'Activar pantalla completa (Ventana)',
+                    _isFullScreen ? l10n.windowFullscreenExit : l10n.windowFullscreenEnter,
                     style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.accentGreen),
                   ),
-                  subtitle: const Text('Maximiza la ventana ocupando todo tu monitor (o pulsa tecla F)', style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+                  subtitle: Text(l10n.windowFullscreenSubtitle, style: const TextStyle(color: AppTheme.textMuted, fontSize: 11)),
                   onTap: () {
                     Navigator.of(ctx).pop();
                     _toggleFullScreen();
@@ -366,13 +372,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
     setState(() {
       if (_aspectRatioFit == BoxFit.contain) {
         _aspectRatioFit = BoxFit.cover;
-        _aspectRatioName = 'Completa';
       } else if (_aspectRatioFit == BoxFit.cover) {
         _aspectRatioFit = BoxFit.fill;
-        _aspectRatioName = 'Estirar';
       } else {
         _aspectRatioFit = BoxFit.contain;
-        _aspectRatioName = 'Ajustar';
       }
     });
     _startControlsTimer();
@@ -457,6 +460,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   void _showAudioTracksDialog() {
+    final l10n = context.l10n;
     final tracks = _player.state.tracks.audio;
     final current = _player.state.track.audio;
 
@@ -482,9 +486,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   children: [
                     const Icon(Icons.audiotrack, color: AppTheme.primary),
                     const SizedBox(width: 10),
-                    const Text(
-                      'Pistas de Audio',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    Text(
+                      l10n.audioTracks,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     const Spacer(),
                     Container(
@@ -494,7 +498,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
-                        '${tracks.length} disponible(s)',
+                        l10n.tracksAvailableCount(tracks.length),
                         style: const TextStyle(color: AppTheme.primary, fontSize: 11, fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -502,10 +506,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 ),
                 const SizedBox(height: 12),
                 if (tracks.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
                     child: Center(
-                      child: Text('No hay pistas adicionales disponibles', style: TextStyle(color: AppTheme.textMuted)),
+                      child: Text(l10n.noAudioTracksAvailable, style: const TextStyle(color: AppTheme.textMuted)),
                     ),
                   )
                 else
@@ -553,6 +557,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   void _showSubtitleTracksDialog() {
+    final l10n = context.l10n;
     final tracks = _player.state.tracks.subtitle;
     final current = _player.state.track.subtitle;
 
@@ -578,9 +583,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   children: [
                     const Icon(Icons.subtitles, color: AppTheme.primary),
                     const SizedBox(width: 10),
-                    const Text(
-                      'Subtítulos',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    Text(
+                      l10n.subtitles,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     const Spacer(),
                     Container(
@@ -590,7 +595,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
-                        '${tracks.length} idioma(s)',
+                        l10n.languagesAvailableCount(tracks.length),
                         style: const TextStyle(color: AppTheme.primary, fontSize: 11, fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -603,7 +608,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     dense: true,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 8),
                     title: Text(
-                      'Desactivados',
+                      l10n.subtitlesDisabled,
                       style: TextStyle(
                         color: current == SubtitleTrack.no() ? AppTheme.primary : AppTheme.textPrimary,
                         fontWeight: current == SubtitleTrack.no() ? FontWeight.bold : FontWeight.normal,
@@ -618,10 +623,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 ),
                 const Divider(color: AppTheme.border, height: 1),
                 if (tracks.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
                     child: Center(
-                      child: Text('No hay subtítulos disponibles', style: TextStyle(color: AppTheme.textMuted)),
+                      child: Text(l10n.noSubtitlesAvailable, style: const TextStyle(color: AppTheme.textMuted)),
                     ),
                   )
                 else
@@ -754,6 +759,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       backgroundColor: Colors.black,
       body: Focus(
@@ -931,9 +937,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
                       children: [
                         const Icon(Icons.error_outline, color: AppTheme.accentRed, size: 48),
                         const SizedBox(height: 16),
-                        const Text(
-                          'Error de reproducción',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        Text(
+                          l10n.playbackError,
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -948,7 +954,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                             _player.open(Media(_streamUrl));
                           },
                           icon: const Icon(Icons.refresh),
-                          label: const Text('Reintentar'),
+                          label: Text(l10n.retry),
                         ),
                       ],
                     ),
@@ -996,7 +1002,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-                    tooltip: 'Minimizar a la barra inferior',
+                    tooltip: l10n.minimizeTooltip,
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                   const SizedBox(width: 8),
@@ -1026,9 +1032,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                 ),
                               ),
                               const SizedBox(width: 6),
-                              const Text(
-                                'EN DIRECTO',
-                                style: TextStyle(
+                              Text(
+                                l10n.liveOnAir,
+                                style: const TextStyle(
                                   color: AppTheme.accentRed,
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
@@ -1047,7 +1053,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     ),
                     icon: const Icon(Icons.aspect_ratio, size: 16, color: AppTheme.primary),
-                    label: Text('Pantalla: $_aspectRatioName', style: const TextStyle(fontSize: 12)),
+                    label: Text(l10n.screenRatioLabel(_getAspectRatioName(context)), style: const TextStyle(fontSize: 12)),
                     onPressed: _showScreenFormatDialog,
                     onLongPress: _toggleAspectRatio,
                   ),
@@ -1055,13 +1061,13 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   // Audio Track Button
                   IconButton(
                     icon: const Icon(Icons.audiotrack, color: Colors.white, size: 20),
-                    tooltip: 'Pistas de audio',
+                    tooltip: l10n.audioTracksTooltip,
                     onPressed: _showAudioTracksDialog,
                   ),
                   // Subtitles Button
                   IconButton(
                     icon: const Icon(Icons.subtitles, color: Colors.white, size: 20),
-                    tooltip: 'Subtítulos',
+                    tooltip: l10n.subtitlesTooltip,
                     onPressed: _showSubtitleTracksDialog,
                   ),
                   // Favorite Star Button
@@ -1075,7 +1081,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                             color: isFav ? Colors.amber : Colors.white,
                             size: 22,
                           ),
-                          tooltip: isFav ? 'Quitar de favoritos' : 'Añadir a favoritos',
+                          tooltip: isFav ? l10n.removeFavoriteTooltip : l10n.addFavoriteTooltip,
                           onPressed: () {
                             activity.toggleFavorite(_contentId!, _type!);
                             _startControlsTimer();
@@ -1094,7 +1100,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                             color: isRec ? AppTheme.accentRed : Colors.white,
                             size: 22,
                           ),
-                          tooltip: isRec ? 'Detener grabación PVR' : 'Grabar transmisión',
+                          tooltip: isRec ? l10n.stopPvrTooltip : l10n.recordPvrTooltip,
                           onPressed: () {
                             downloads.toggleLiveRecording(
                               channelId: _contentId!,
@@ -1107,8 +1113,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
                               SnackBar(
                                 content: Text(
                                   isRec
-                                      ? 'Grabación de "$_title" detenida y guardada en Descargas'
-                                      : 'Grabando "$_title" en segundo plano...',
+                                      ? l10n.recordingStoppedToast(_title)
+                                      : l10n.recordingStartedToast(_title),
                                 ),
                               ),
                             );
@@ -1127,7 +1133,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                             color: isDownloaded ? AppTheme.accentGreen : Colors.white,
                             size: 22,
                           ),
-                          tooltip: isDownloaded ? 'Descargado (clic para abrir carpeta)' : 'Descargar para ver sin conexión',
+                          tooltip: isDownloaded ? l10n.downloadedOpenFolderTooltip : l10n.downloadOfflineTooltip,
                           onPressed: isDownloaded
                               ? () {
                                   final item = downloads.completedItems.where((i) => i.id == _contentId).firstOrNull;
@@ -1145,7 +1151,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                   );
                                   _startControlsTimer();
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Descarga iniciada en segundo plano')),
+                                    SnackBar(content: Text(l10n.downloadStartedToast)),
                                   );
                                 },
                         );
@@ -1161,7 +1167,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                           color: isSharing ? AppTheme.primary : Colors.white,
                           size: 22,
                         ),
-                        tooltip: isSharing ? 'Transmitiendo en red local (Activo)' : 'Reenviar vídeo por URL (Red Local)',
+                        tooltip: isSharing ? l10n.lanSharingActiveTooltip : l10n.lanSharingInactiveTooltip,
                         onPressed: () {
                           showDialog(
                             context: context,
@@ -1182,13 +1188,13 @@ class _PlayerScreenState extends State<PlayerScreen> {
                       color: Colors.white,
                       size: 24,
                     ),
-                    tooltip: _isFullScreen ? 'Salir de pantalla completa' : 'Pantalla completa',
+                    tooltip: _isFullScreen ? l10n.exitFullscreenTooltip : l10n.enterFullscreenTooltip,
                     onPressed: _toggleFullScreen,
                   ),
                   // Stop & Close Button
                   IconButton(
                     icon: const Icon(Icons.close, color: Colors.white70, size: 24),
-                    tooltip: 'Detener y cerrar reproductor',
+                    tooltip: l10n.stopAndClosePlayerTooltip,
                     onPressed: () {
                       context.read<PlaybackProvider>().stop();
                       Navigator.of(context).pop();
@@ -1336,7 +1342,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                           color: Colors.white,
                           size: 22,
                         ),
-                        tooltip: _isFullScreen ? 'Salir de pantalla completa' : 'Pantalla completa',
+                        tooltip: _isFullScreen ? l10n.exitFullscreenTooltip : l10n.enterFullscreenTooltip,
                         onPressed: _toggleFullScreen,
                       ),
                     ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/category.dart';
+import '../../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import 'tv_focusable.dart';
 
@@ -35,6 +36,7 @@ class CategorySidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final topCount = customTopItems.length + 1; // custom items + "Todos"
 
     return Container(
@@ -46,11 +48,11 @@ class CategorySidebar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Text(
-              'CATEGORÍAS',
-              style: TextStyle(
+              l10n.isEnglish ? 'CATEGORIES' : 'CATEGORÍAS',
+              style: const TextStyle(
                 color: AppTheme.textMuted,
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
@@ -82,7 +84,7 @@ class CategorySidebar extends StatelessWidget {
                   return Column(
                     children: [
                       _buildCategoryItem(
-                        title: 'Todos',
+                        title: l10n.all,
                         icon: Icons.grid_view,
                         count: totalCount,
                         isSelected: isSelected,

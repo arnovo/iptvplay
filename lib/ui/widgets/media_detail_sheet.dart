@@ -4,6 +4,7 @@ import '../../models/vod_item.dart';
 import '../../providers/download_provider.dart';
 import '../../providers/user_activity_provider.dart';
 import '../../services/tmdb_service.dart';
+import '../../l10n/app_localizations.dart';
 import '../screens/player_screen.dart';
 import '../theme/app_theme.dart';
 
@@ -46,6 +47,7 @@ class _MediaDetailSheetState extends State<MediaDetailSheet> {
   Widget build(BuildContext context) {
     final userActivity = context.watch<UserActivityProvider>();
     final downloadProvider = context.watch<DownloadProvider>();
+    final l10n = context.l10n;
     final isFav = userActivity.isFavorite(widget.vod.id, 'vod');
     final downloadedItem = downloadProvider.completedItems
         .where((i) => i.id == widget.vod.id)
@@ -216,10 +218,10 @@ class _MediaDetailSheetState extends State<MediaDetailSheet> {
                           // Synopsis
                           Text(
                             _isLoading
-                                ? 'Cargando información ampliada...'
+                                ? (l10n.isEnglish ? 'Loading details...' : 'Cargando información ampliada...')
                                 : (_metadata?.overview.isNotEmpty == true
                                     ? _metadata!.overview
-                                    : 'Sin sinopsis disponible para esta película.'),
+                                    : l10n.noSynopsis),
                             maxLines: 4,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.4),
@@ -240,7 +242,9 @@ class _MediaDetailSheetState extends State<MediaDetailSheet> {
                                 ),
                                 icon: const Icon(Icons.play_arrow, size: 22),
                                 label: Text(
-                                  widget.resumeSeconds != null && widget.resumeSeconds! > 10 ? 'Reanudar' : 'Ver Ahora',
+                                  widget.resumeSeconds != null && widget.resumeSeconds! > 10
+                                      ? l10n.resume
+                                      : (l10n.isEnglish ? 'Watch Now' : 'Ver Ahora'),
                                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                                 ),
                                 onPressed: () {
@@ -271,7 +275,7 @@ class _MediaDetailSheetState extends State<MediaDetailSheet> {
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                 ),
                                 icon: Icon(isFav ? Icons.star : Icons.star_border, size: 18),
-                                label: Text(isFav ? 'Favorito' : 'Guardar'),
+                                label: Text(isFav ? l10n.favorites : (l10n.isEnglish ? 'Save' : 'Guardar')),
                                 onPressed: () {
                                   userActivity.toggleFavorite(widget.vod.id, 'vod');
                                 },
@@ -285,7 +289,7 @@ class _MediaDetailSheetState extends State<MediaDetailSheet> {
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                 ),
                                 icon: Icon(isDownloaded ? Icons.check_circle : Icons.download, size: 18),
-                                label: Text(isDownloaded ? 'Descargada' : 'Descargar'),
+                                label: Text(isDownloaded ? l10n.downloaded : l10n.download),
                                 onPressed: isDownloaded
                                     ? null
                                     : () {
@@ -297,7 +301,13 @@ class _MediaDetailSheetState extends State<MediaDetailSheet> {
                                           posterUrl: poster,
                                         );
                                         ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(content: Text('Descarga iniciada en segundo plano')),
+                                          SnackBar(
+                                            content: Text(
+                                              l10n.isEnglish
+                                                  ? 'Download started in background'
+                                                  : 'Descarga iniciada en segundo plano',
+                                            ),
+                                          ),
                                         );
                                       },
                               ),
@@ -311,7 +321,7 @@ class _MediaDetailSheetState extends State<MediaDetailSheet> {
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                   ),
                                   icon: const Icon(Icons.folder_open, size: 18),
-                                  label: const Text('Abrir carpeta'),
+                                  label: Text(l10n.openFolder),
                                   onPressed: () {
                                     downloadProvider.openItemInFileManager(downloadedItem);
                                   },

@@ -4,6 +4,7 @@ import '../../providers/catalog_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/user_activity_provider.dart';
 import '../../services/backup_service.dart';
+import '../../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 
 class BackupDialog extends StatefulWidget {
@@ -32,10 +33,10 @@ class _BackupDialogState extends State<BackupDialog> {
         _isProcessing = false;
         if (savedPath != null) {
           _isSuccess = true;
-          _statusMessage = 'Copia exportada exitosamente en:\n$savedPath';
+          _statusMessage = context.l10n.backupExportSuccessPath(savedPath);
         } else {
           _isSuccess = false;
-          _statusMessage = 'Exportación cancelada';
+          _statusMessage = context.l10n.backupExportCancelled;
         }
       });
     }
@@ -65,19 +66,21 @@ class _BackupDialogState extends State<BackupDialog> {
       setState(() {
         _isProcessing = false;
         _isSuccess = true;
-        _statusMessage = '¡Copia de seguridad restaurada correctamente!\nListas, favoritos y progresos recuperados.';
+        _statusMessage = context.l10n.backupImportSuccessDesc;
       });
     } else {
       setState(() {
         _isProcessing = false;
         _isSuccess = false;
-        _statusMessage = 'No se pudo restaurar el archivo o la selección fue cancelada.';
+        _statusMessage = context.l10n.backupImportFailed;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return Dialog(
       backgroundColor: AppTheme.surface,
       shape: RoundedRectangleBorder(
@@ -102,17 +105,17 @@ class _BackupDialogState extends State<BackupDialog> {
                   child: const Icon(Icons.cloud_sync, color: AppTheme.primary, size: 24),
                 ),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Copia de Seguridad y Nube',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        l10n.backupDialogTitle,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        'Exporta o importa tus listas, favoritos y progreso',
-                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                        l10n.backupDialogSubtitle,
+                        style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                       ),
                     ],
                   ),
@@ -139,12 +142,12 @@ class _BackupDialogState extends State<BackupDialog> {
                 children: [
                   const Icon(Icons.file_upload_outlined, color: AppTheme.primary, size: 28),
                   const SizedBox(width: 14),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Exportar Copia (.json)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        Text('Guarda todas tus listas y configuraciones en un archivo local', style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+                        Text(l10n.exportBackupTitle, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        Text(l10n.exportBackupDesc, style: const TextStyle(color: AppTheme.textMuted, fontSize: 11)),
                       ],
                     ),
                   ),
@@ -154,7 +157,7 @@ class _BackupDialogState extends State<BackupDialog> {
                       foregroundColor: Colors.black,
                     ),
                     onPressed: _isProcessing ? null : _exportBackup,
-                    child: const Text('Exportar', style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: Text(l10n.exportAction, style: const TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
@@ -173,12 +176,12 @@ class _BackupDialogState extends State<BackupDialog> {
                 children: [
                   const Icon(Icons.file_download_outlined, color: AppTheme.secondary, size: 28),
                   const SizedBox(width: 14),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Restaurar Copia (.json)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        Text('Recupera listas y favoritos desde un archivo previo', style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
+                        Text(l10n.restoreBackupTitle, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        Text(l10n.restoreBackupDesc, style: const TextStyle(color: AppTheme.textMuted, fontSize: 11)),
                       ],
                     ),
                   ),
@@ -188,7 +191,7 @@ class _BackupDialogState extends State<BackupDialog> {
                       side: const BorderSide(color: AppTheme.border),
                     ),
                     onPressed: _isProcessing ? null : _importBackup,
-                    child: const Text('Importar'),
+                    child: Text(l10n.restoreAction),
                   ),
                 ],
               ),

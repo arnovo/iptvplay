@@ -8,6 +8,8 @@ import '../../providers/catalog_provider.dart';
 import '../../providers/epg_provider.dart';
 import '../../providers/download_provider.dart';
 import '../../providers/log_provider.dart';
+import '../../providers/language_provider.dart';
+import '../../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import 'live_tv_screen.dart';
 import 'vod_screen.dart';
@@ -77,13 +79,14 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
     final paused = downloadProvider.pausedDownloads;
     if (paused.isEmpty) return;
 
+    final l10n = context.l10n;
     final title = paused.length == 1
-        ? 'Reanudar descarga pausada'
-        : 'Reanudar descargas pausadas';
+        ? l10n.resumePausedDownloadTitle
+        : l10n.resumePausedDownloadsTitle;
 
     final message = paused.length == 1
-        ? 'Se ha detectado una descarga incompleta:\n"${paused.first.title}"\n\n¿Deseas reanudarla ahora desde donde se quedó?'
-        : 'Se han detectado ${paused.length} descargas incompletas:\n${paused.take(3).map((e) => '• ${e.title}').join('\n')}${paused.length > 3 ? '\n• ...' : ''}\n\n¿Deseas reanudarlas ahora?';
+        ? l10n.resumeSinglePausedMessage(paused.first.title)
+        : l10n.resumeMultiplePausedMessage(paused.length);
 
     final shouldResume = await showDialog<bool>(
       context: context,
@@ -120,7 +123,7 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Más tarde', style: TextStyle(color: AppTheme.textMuted)),
+            child: Text(l10n.later, style: const TextStyle(color: AppTheme.textMuted)),
           ),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
@@ -129,7 +132,7 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             icon: const Icon(Icons.play_arrow, size: 18),
-            label: Text(paused.length == 1 ? 'Reanudar' : 'Reanudar todas'),
+            label: Text(paused.length == 1 ? l10n.resume : l10n.resumeAll),
             onPressed: () => Navigator.of(ctx).pop(true),
           ),
         ],
@@ -144,8 +147,8 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
             backgroundColor: AppTheme.surface,
             content: Text(
               paused.length == 1
-                  ? 'Reanudando descarga de "${paused.first.title}"...'
-                  : 'Reanudando ${paused.length} descargas...',
+                  ? '${l10n.downloading} "${paused.first.title}"...'
+                  : '${l10n.downloading} (${paused.length})...',
               style: const TextStyle(color: AppTheme.primary),
             ),
             duration: const Duration(seconds: 3),
@@ -159,7 +162,9 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
   Widget build(BuildContext context) {
     final profileProvider = context.watch<ProfileProvider>();
     final catalogProvider = context.watch<CatalogProvider>();
+    final languageProvider = context.watch<LanguageProvider>();
     final activeProfile = profileProvider.activeProfile;
+    final l10n = context.l10n;
 
     return Scaffold(
       body: Column(
@@ -176,189 +181,320 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                // App Logo
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primary.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppTheme.primary.withValues(alpha: 0.4)),
+                        // App Logo
+                        Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primary.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: AppTheme.primary.withValues(alpha: 0.4)),
+                                ),
+                                child: const Icon(Icons.live_tv, color: AppTheme.primary, size: 24),
+                              ),
+                              const SizedBox(width: 12),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    l10n.appTitle,
+                                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                                  ),
+                                  Text(
+                                    l10n.smartPlayer,
+                                    style: const TextStyle(color: AppTheme.primary, fontSize: 11, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                        child: const Icon(Icons.live_tv, color: AppTheme.primary, size: 24),
-                      ),
-                      const SizedBox(width: 12),
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'IPTV Play',
-                            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
-                          ),
-                          Text(
-                            'Smart Player',
-                            style: TextStyle(color: AppTheme.primary, fontSize: 11, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
 
-                // Active Profile Card
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  child: InkWell(
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const ProfileListScreen()),
-                      );
-                    },
-                    borderRadius: BorderRadius.circular(10),
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppTheme.surfaceLight,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppTheme.border),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.account_circle, color: AppTheme.primary, size: 20),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  activeProfile?.name ?? 'Sin lista activa',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                        // Active Profile Card
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          child: TvFocusable(
+                            borderRadius: BorderRadius.circular(10),
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(builder: (_) => const ProfileListScreen()),
+                              );
+                            },
+                            builder: (context, isFocused, isHovered) {
+                              return Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: isFocused
+                                      ? AppTheme.primary.withValues(alpha: 0.15)
+                                      : AppTheme.surfaceLight,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: isFocused ? AppTheme.primary : AppTheme.border,
+                                  ),
                                 ),
-                                Text(
-                                  activeProfile != null ? 'Cambiar lista' : 'Toca para añadir',
-                                  style: const TextStyle(color: AppTheme.textMuted, fontSize: 10),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.account_circle, color: AppTheme.primary, size: 20),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            activeProfile?.name ?? l10n.noActiveProfile,
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Text(
+                                            activeProfile != null ? l10n.switchProfile : l10n.tapToAdd,
+                                            style: const TextStyle(color: AppTheme.textMuted, fontSize: 10),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const Icon(Icons.unfold_more, size: 16, color: AppTheme.textMuted),
+                                  ],
                                 ),
-                              ],
+                              );
+                            },
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+                        const Divider(color: AppTheme.border, height: 1),
+                        const SizedBox(height: 12),
+
+                        // Navigation Tabs
+                        _buildNavItem(
+                          icon: Icons.tv,
+                          title: l10n.liveTv,
+                          badge: '${catalogProvider.content.channels.length}',
+                          index: 0,
+                        ),
+                        _buildNavItem(
+                          icon: Icons.movie_outlined,
+                          title: l10n.moviesVod,
+                          badge: '${catalogProvider.content.vods.length}',
+                          index: 1,
+                        ),
+                        _buildNavItem(
+                          icon: Icons.video_library_outlined,
+                          title: l10n.series,
+                          badge: '${catalogProvider.content.series.length}',
+                          index: 2,
+                        ),
+                        _buildNavItem(
+                          icon: Icons.download_done,
+                          title: l10n.downloadsPvr,
+                          badge: '${context.watch<DownloadProvider>().items.length}',
+                          index: 3,
+                        ),
+                        _buildNavItem(
+                          icon: Icons.receipt_long,
+                          title: l10n.logs,
+                          badge: '${context.watch<LogProvider>().totalCount}',
+                          index: 4,
+                        ),
+
+                        const Spacer(),
+
+                        // Bottom actions
+                        const Divider(color: AppTheme.border, height: 1),
+
+                        // Language Switcher Tile
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                          child: TvFocusable(
+                            borderRadius: BorderRadius.circular(8),
+                            onPressed: () => languageProvider.toggleLanguage(),
+                            builder: (context, isFocused, isHovered) {
+                              return Container(
+                                decoration: BoxDecoration(
+                                  color: isFocused ? AppTheme.primary.withValues(alpha: 0.1) : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: ListTile(
+                                  dense: true,
+                                  leading: const Icon(Icons.language, color: AppTheme.textSecondary, size: 20),
+                                  title: Text(
+                                    l10n.language,
+                                    style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                                  ),
+                                  trailing: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.surfaceLight,
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(color: AppTheme.primary.withValues(alpha: 0.4)),
+                                    ),
+                                    child: Text(
+                                      '${languageProvider.currentFlag} ${languageProvider.currentLanguageName}',
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        color: AppTheme.primary,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  onTap: () => languageProvider.toggleLanguage(),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+
+                        // Backup
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                          child: TvFocusable(
+                            borderRadius: BorderRadius.circular(8),
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (_) => const BackupDialog(),
+                              );
+                            },
+                            builder: (context, isFocused, isHovered) {
+                              return Container(
+                                decoration: BoxDecoration(
+                                  color: isFocused ? AppTheme.primary.withValues(alpha: 0.1) : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: ListTile(
+                                  dense: true,
+                                  leading: const Icon(Icons.cloud_sync, color: AppTheme.textSecondary, size: 20),
+                                  title: Text(l10n.backup, style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
+                                  onTap: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (_) => const BackupDialog(),
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+
+                        if (activeProfile != null)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                            child: TvFocusable(
+                              borderRadius: BorderRadius.circular(8),
+                              onPressed: catalogProvider.isLoading
+                                  ? null
+                                  : () {
+                                      catalogProvider.loadCatalog(activeProfile);
+                                      context.read<EpgProvider>().loadEpg(activeProfile, forceRefresh: true);
+                                    },
+                              builder: (context, isFocused, isHovered) {
+                                return Container(
+                                  decoration: BoxDecoration(
+                                    color: isFocused ? AppTheme.primary.withValues(alpha: 0.1) : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: ListTile(
+                                    dense: true,
+                                    leading: const Icon(Icons.refresh, color: AppTheme.textSecondary, size: 20),
+                                    title: Text(l10n.reloadList, style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
+                                    onTap: catalogProvider.isLoading
+                                        ? null
+                                        : () {
+                                            catalogProvider.loadCatalog(activeProfile);
+                                            context.read<EpgProvider>().loadEpg(activeProfile, forceRefresh: true);
+                                          },
+                                  ),
+                                );
+                              },
                             ),
                           ),
-                          const Icon(Icons.unfold_more, size: 16, color: AppTheme.textMuted),
-                        ],
-                      ),
+
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                          child: TvFocusable(
+                            borderRadius: BorderRadius.circular(8),
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (_) => const AddProfileDialog(),
+                              );
+                            },
+                            builder: (context, isFocused, isHovered) {
+                              return Container(
+                                decoration: BoxDecoration(
+                                  color: isFocused ? AppTheme.primary.withValues(alpha: 0.15) : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: ListTile(
+                                  dense: true,
+                                  leading: const Icon(Icons.playlist_add, color: AppTheme.primary, size: 20),
+                                  title: Text(
+                                    l10n.addList,
+                                    style: const TextStyle(fontSize: 13, color: AppTheme.primary, fontWeight: FontWeight.bold),
+                                  ),
+                                  onTap: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (_) => const AddProfileDialog(),
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                          child: TvFocusable(
+                            borderRadius: BorderRadius.circular(8),
+                            onPressed: _toggleFullScreen,
+                            builder: (context, isFocused, isHovered) {
+                              return Container(
+                                decoration: BoxDecoration(
+                                  color: isFocused ? AppTheme.primary.withValues(alpha: 0.1) : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: ListTile(
+                                  dense: true,
+                                  leading: Icon(
+                                    _isFullScreen ? Icons.fullscreen_exit : Icons.fullscreen,
+                                    color: AppTheme.textSecondary,
+                                    size: 20,
+                                  ),
+                                  title: Text(
+                                    _isFullScreen ? l10n.exitFullscreen : l10n.fullscreen,
+                                    style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                                  ),
+                                  onTap: _toggleFullScreen,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
                     ),
                   ),
                 ),
 
-                const SizedBox(height: 16),
-                const Divider(color: AppTheme.border, height: 1),
-                const SizedBox(height: 12),
+                const VerticalDivider(width: 1, color: AppTheme.border),
 
-                // Navigation Tabs
-                _buildNavItem(
-                  icon: Icons.tv,
-                  title: 'TV en Vivo',
-                  badge: '${catalogProvider.content.channels.length}',
-                  index: 0,
+                // Main View Content
+                Expanded(
+                  child: _buildBody(activeProfile, catalogProvider),
                 ),
-                _buildNavItem(
-                  icon: Icons.movie_outlined,
-                  title: 'Películas (VOD)',
-                  badge: '${catalogProvider.content.vods.length}',
-                  index: 1,
-                ),
-                _buildNavItem(
-                  icon: Icons.video_library_outlined,
-                  title: 'Series',
-                  badge: '${catalogProvider.content.series.length}',
-                  index: 2,
-                ),
-                _buildNavItem(
-                  icon: Icons.download_done,
-                  title: 'Descargas & PVR',
-                  badge: '${context.watch<DownloadProvider>().items.length}',
-                  index: 3,
-                ),
-                _buildNavItem(
-                  icon: Icons.receipt_long,
-                  title: 'Registros',
-                  badge: '${context.watch<LogProvider>().totalCount}',
-                  index: 4,
-                ),
-
-                const Spacer(),
-
-                // Bottom actions
-                const Divider(color: AppTheme.border, height: 1),
-                ListTile(
-                  dense: true,
-                  leading: const Icon(Icons.cloud_sync, color: AppTheme.textSecondary, size: 20),
-                  title: const Text('Copia de seguridad', style: TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (_) => const BackupDialog(),
-                    );
-                  },
-                ),
-                if (activeProfile != null)
-                  ListTile(
-                    dense: true,
-                    leading: const Icon(Icons.refresh, color: AppTheme.textSecondary, size: 20),
-                    title: const Text('Recargar lista', style: TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
-                    onTap: catalogProvider.isLoading
-                        ? null
-                        : () {
-                            catalogProvider.loadCatalog(activeProfile);
-                            context.read<EpgProvider>().loadEpg(activeProfile, forceRefresh: true);
-                          },
-                  ),
-                ListTile(
-                  dense: true,
-                  leading: const Icon(Icons.playlist_add, color: AppTheme.primary, size: 20),
-                  title: const Text('Añadir lista', style: TextStyle(fontSize: 13, color: AppTheme.primary, fontWeight: FontWeight.bold)),
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (_) => const AddProfileDialog(),
-                    );
-                  },
-                ),
-                ListTile(
-                  dense: true,
-                  leading: Icon(
-                    _isFullScreen ? Icons.fullscreen_exit : Icons.fullscreen,
-                    color: AppTheme.textSecondary,
-                    size: 20,
-                  ),
-                  title: Text(
-                    _isFullScreen ? 'Salir de pantalla completa' : 'Pantalla completa',
-                    style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
-                  ),
-                  onTap: _toggleFullScreen,
-                ),
-                const SizedBox(height: 12),
               ],
             ),
           ),
-        ),
-
-        const VerticalDivider(width: 1, color: AppTheme.border),
-
-        // Main View Content
-        Expanded(
-          child: _buildBody(activeProfile, catalogProvider),
-        ),
-      ],
-    ),
-  ),
-  const MiniplayerBar(),
-],
-),
-);
+          const MiniplayerBar(),
+        ],
+      ),
+    );
   }
 
   Widget _buildNavItem({
@@ -368,6 +504,7 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
     required int index,
   }) {
     final isSelected = _selectedIndex == index;
+
     return TvFocusable(
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
       borderRadius: BorderRadius.circular(10),
@@ -421,6 +558,8 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
   }
 
   Widget _buildBody(dynamic activeProfile, CatalogProvider catalogProvider) {
+    final l10n = context.l10n;
+
     if (_selectedIndex == 3) {
       return const DownloadsScreen();
     }
@@ -443,14 +582,14 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
               child: const Icon(Icons.playlist_play, size: 64, color: AppTheme.primary),
             ),
             const SizedBox(height: 20),
-            const Text(
-              '¡Bienvenido a IPTV Play!',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            Text(
+              l10n.welcomeTitle,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Para empezar a ver TV en vivo, películas y series, añade tu primera lista.',
-              style: TextStyle(color: AppTheme.textSecondary),
+            Text(
+              l10n.welcomeSubtitle,
+              style: const TextStyle(color: AppTheme.textSecondary),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -461,7 +600,7 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
                 );
               },
               icon: const Icon(Icons.add),
-              label: const Text('Añadir Lista o Cuenta Xtream'),
+              label: Text(l10n.addPlaylistButton),
             ),
           ],
         ),
@@ -469,20 +608,20 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
     }
 
     if (catalogProvider.isLoading) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(color: AppTheme.primary),
-            SizedBox(height: 20),
+            const CircularProgressIndicator(color: AppTheme.primary),
+            const SizedBox(height: 20),
             Text(
-              'Cargando canales y catálogo...',
-              style: TextStyle(color: AppTheme.textSecondary, fontSize: 15),
+              l10n.loadingCatalogTitle,
+              style: const TextStyle(color: AppTheme.textSecondary, fontSize: 15),
             ),
-            SizedBox(height: 6),
+            const SizedBox(height: 6),
             Text(
-              'Procesando lista M3U / Servidor Xtream...',
-              style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
+              l10n.loadingCatalogSubtitle,
+              style: const TextStyle(color: AppTheme.textMuted, fontSize: 12),
             ),
           ],
         ),
@@ -504,7 +643,7 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
             children: [
               const Icon(Icons.error_outline, color: AppTheme.accentRed, size: 48),
               const SizedBox(height: 16),
-              const Text('Error al cargar la lista', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(l10n.catalogErrorTitle, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               Text(
                 catalogProvider.errorMessage!,
@@ -515,7 +654,7 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
               ElevatedButton.icon(
                 onPressed: () => catalogProvider.loadCatalog(activeProfile),
                 icon: const Icon(Icons.refresh),
-                label: const Text('Reintentar'),
+                label: Text(l10n.retry),
               ),
             ],
           ),

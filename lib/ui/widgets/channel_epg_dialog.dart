@@ -4,6 +4,7 @@ import '../../models/channel.dart';
 import '../../models/epg_program.dart';
 import '../../providers/epg_provider.dart';
 import '../../providers/profile_provider.dart';
+import '../../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 
 class ChannelEpgDialog extends StatefulWidget {
@@ -57,6 +58,8 @@ class _ChannelEpgDialogState extends State<ChannelEpgDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return Dialog(
       backgroundColor: AppTheme.surface,
       shape: RoundedRectangleBorder(
@@ -85,9 +88,9 @@ class _ChannelEpgDialogState extends State<ChannelEpgDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Guía de Programación (EPG)',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      Text(
+                        l10n.channelEpgTitle,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       Text(
                         widget.channel.name,
@@ -117,14 +120,14 @@ class _ChannelEpgDialogState extends State<ChannelEpgDialog> {
                             children: [
                               Icon(Icons.event_busy, size: 48, color: AppTheme.textMuted.withValues(alpha: 0.5)),
                               const SizedBox(height: 12),
-                              const Text(
-                                'No hay datos de EPG para este canal',
-                                style: TextStyle(color: AppTheme.textSecondary, fontWeight: FontWeight.bold),
+                              Text(
+                                l10n.noEpgDataChannel,
+                                style: const TextStyle(color: AppTheme.textSecondary, fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 4),
-                              const Text(
-                                'Asegúrate de que la lista contenga un tvg-id o archivo XMLTV válido',
-                                style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
+                              Text(
+                                l10n.noEpgCheckTvgId,
+                                style: const TextStyle(color: AppTheme.textMuted, fontSize: 12),
                                 textAlign: TextAlign.center,
                               ),
                             ],
@@ -160,9 +163,9 @@ class _ChannelEpgDialogState extends State<ChannelEpgDialog> {
                                           color: AppTheme.primary,
                                           borderRadius: BorderRadius.circular(4),
                                         ),
-                                        child: const Text(
-                                          'AHORA',
-                                          style: TextStyle(color: Colors.black, fontSize: 9, fontWeight: FontWeight.bold),
+                                        child: Text(
+                                          l10n.nowBadge,
+                                          style: const TextStyle(color: Colors.black, fontSize: 9, fontWeight: FontWeight.bold),
                                         ),
                                       ),
                                     ],

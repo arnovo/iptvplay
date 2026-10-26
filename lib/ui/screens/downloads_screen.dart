@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/download_item.dart';
 import '../../providers/download_provider.dart';
+import '../../l10n/app_localizations.dart';
 import '../screens/player_screen.dart';
 import '../theme/app_theme.dart';
 
@@ -13,6 +14,7 @@ class DownloadsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final downloadProvider = context.watch<DownloadProvider>();
     final items = downloadProvider.items;
+    final l10n = context.l10n;
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -41,12 +43,12 @@ class DownloadsScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Descargas y Grabaciones Offline',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      Text(
+                        l10n.isEnglish ? 'Downloads & Offline Recordings' : 'Descargas y Grabaciones Offline',
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        '${items.length} archivos disponibles • Ocupan en total: ${downloadProvider.formattedTotalStorage}',
+                        '${items.length} ${l10n.isEnglish ? "files available" : "archivos disponibles"} • ${l10n.isEnglish ? "Total size:" : "Ocupan en total:"} ${downloadProvider.formattedTotalStorage}',
                         style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
                       ),
                     ],
@@ -72,7 +74,7 @@ class DownloadsScreen extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          '${downloadProvider.activeRecordings.length} Grabando...',
+                          '${downloadProvider.activeRecordings.length} ${l10n.isEnglish ? "Recording..." : "Grabando..."}',
                           style: const TextStyle(color: AppTheme.accentRed, fontSize: 12, fontWeight: FontWeight.bold),
                         ),
                       ],
@@ -93,13 +95,13 @@ class DownloadsScreen extends StatelessWidget {
               children: [
                 const Icon(Icons.folder_outlined, size: 18, color: AppTheme.textSecondary),
                 const SizedBox(width: 8),
-                const Text(
-                  'Carpeta: ',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppTheme.textSecondary),
+                Text(
+                  l10n.isEnglish ? 'Folder: ' : 'Carpeta: ',
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppTheme.textSecondary),
                 ),
                 Expanded(
                   child: Text(
-                    downloadProvider.currentStoragePath ?? 'Cargando carpeta...',
+                    downloadProvider.currentStoragePath ?? (l10n.isEnglish ? 'Loading folder...' : 'Cargando carpeta...'),
                     style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -132,7 +134,7 @@ class DownloadsScreen extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   ),
                   icon: const Icon(Icons.folder_open, size: 16),
-                  label: const Text('Abrir carpeta', style: TextStyle(fontSize: 12)),
+                  label: Text(l10n.openFolder, style: const TextStyle(fontSize: 12)),
                   onPressed: () => downloadProvider.openStorageDirectory(),
                 ),
                 const SizedBox(width: 6),
@@ -144,16 +146,22 @@ class DownloadsScreen extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   ),
                   icon: const Icon(Icons.edit_outlined, size: 15),
-                  label: const Text('Cambiar', style: TextStyle(fontSize: 12)),
+                  label: Text(l10n.isEnglish ? 'Change' : 'Cambiar', style: const TextStyle(fontSize: 12)),
                   onPressed: () async {
                     final selected = await FilePicker.getDirectoryPath(
-                      dialogTitle: 'Seleccionar carpeta para descargas',
+                      dialogTitle: l10n.isEnglish ? 'Select download folder' : 'Seleccionar carpeta para descargas',
                     );
                     if (selected != null && context.mounted) {
                       await downloadProvider.changeStorageDirectory(selected);
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Carpeta de descargas cambiada a: $selected')),
+                          SnackBar(
+                            content: Text(
+                              l10n.isEnglish
+                                  ? 'Download folder changed to: $selected'
+                                  : 'Carpeta de descargas cambiada a: $selected',
+                            ),
+                          ),
                         );
                       }
                     }
@@ -163,13 +171,19 @@ class DownloadsScreen extends StatelessWidget {
                   const SizedBox(width: 6),
                   IconButton(
                     icon: const Icon(Icons.restore, size: 18, color: AppTheme.textMuted),
-                    tooltip: 'Restablecer carpeta por defecto',
+                    tooltip: l10n.isEnglish ? 'Reset to default folder' : 'Restablecer carpeta por defecto',
                     visualDensity: VisualDensity.compact,
                     onPressed: () async {
                       await downloadProvider.resetStorageDirectory();
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Carpeta restablecida a la predeterminada')),
+                          SnackBar(
+                            content: Text(
+                              l10n.isEnglish
+                                  ? 'Folder reset to default'
+                                  : 'Carpeta restablecida a la predeterminada',
+                            ),
+                          ),
                         );
                       }
                     },
@@ -188,14 +202,16 @@ class DownloadsScreen extends StatelessWidget {
                       children: [
                         Icon(Icons.cloud_download_outlined, size: 64, color: AppTheme.textMuted.withValues(alpha: 0.5)),
                         const SizedBox(height: 16),
-                        const Text(
-                          'No tienes descargas ni grabaciones',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textSecondary),
+                        Text(
+                          l10n.isEnglish ? 'No downloads or recordings' : 'No tienes descargas ni grabaciones',
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textSecondary),
                         ),
                         const SizedBox(height: 6),
-                        const Text(
-                          'Graba canales en vivo o descarga películas para verlas sin conexión',
-                          style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
+                        Text(
+                          l10n.isEnglish
+                              ? 'Record live channels or download movies to watch offline'
+                              : 'Graba canales en vivo o descarga películas para verlas sin conexión',
+                          style: const TextStyle(color: AppTheme.textMuted, fontSize: 13),
                         ),
                       ],
                     ),
@@ -278,7 +294,7 @@ class DownloadsScreen extends StatelessWidget {
                                     Row(
                                       children: [
                                         Text(
-                                          'Grabando en directo (${item.formattedSize})',
+                                          '${l10n.isEnglish ? "Recording live" : "Grabando en directo"} (${item.formattedSize})',
                                           style: const TextStyle(color: AppTheme.accentRed, fontSize: 12),
                                         ),
                                         if (item.formattedSpeed.isNotEmpty) ...[
@@ -308,7 +324,7 @@ class DownloadsScreen extends StatelessWidget {
                                     Row(
                                       children: [
                                         Text(
-                                          'Descargando... ${(item.progressFraction * 100).toStringAsFixed(0)}% (${item.formattedSize})',
+                                          '${l10n.downloading} ${(item.progressFraction * 100).toStringAsFixed(0)}% (${item.formattedSize})',
                                           style: const TextStyle(color: AppTheme.primary, fontSize: 12),
                                         ),
                                         if (item.formattedSpeed.isNotEmpty) ...[
@@ -344,10 +360,10 @@ class DownloadsScreen extends StatelessWidget {
                                   else
                                     Text(
                                       item.status == DownloadStatus.paused
-                                          ? 'Descarga pausada • ${item.formattedSize} guardados'
+                                          ? '${l10n.isEnglish ? "Download paused" : "Descarga pausada"} • ${item.formattedSize}'
                                           : item.status == DownloadStatus.failed
-                                              ? 'Descarga interrumpida • ${item.formattedSize}'
-                                              : '${item.formattedSize} • Guardado localmente',
+                                              ? '${l10n.isEnglish ? "Download failed" : "Descarga interrumpida"} • ${item.formattedSize}'
+                                              : '${item.formattedSize} • ${l10n.isEnglish ? "Saved locally" : "Guardado localmente"}',
                                       style: TextStyle(
                                         color: item.status == DownloadStatus.paused
                                             ? AppTheme.accentYellow
@@ -378,7 +394,7 @@ class DownloadsScreen extends StatelessWidget {
                                   foregroundColor: Colors.white,
                                 ),
                                 icon: const Icon(Icons.stop, size: 18),
-                                label: const Text('Detener'),
+                                label: Text(l10n.isEnglish ? 'Stop' : 'Detener'),
                                 onPressed: () {
                                   downloadProvider.toggleLiveRecording(
                                     channelId: item.id,
@@ -397,7 +413,7 @@ class DownloadsScreen extends StatelessWidget {
                                       foregroundColor: AppTheme.accentYellow,
                                     ),
                                     icon: const Icon(Icons.pause, size: 18),
-                                    label: const Text('Pausar'),
+                                    label: Text(l10n.pause),
                                     onPressed: () {
                                       downloadProvider.pauseDownload(item.id);
                                     },
@@ -405,7 +421,7 @@ class DownloadsScreen extends StatelessWidget {
                                   const SizedBox(width: 8),
                                   IconButton(
                                     icon: const Icon(Icons.delete_outline, color: AppTheme.textMuted, size: 20),
-                                    tooltip: 'Cancelar descarga',
+                                    tooltip: l10n.isEnglish ? 'Cancel download' : 'Cancelar descarga',
                                     onPressed: () {
                                       downloadProvider.deleteDownload(item.id);
                                     },
@@ -422,7 +438,7 @@ class DownloadsScreen extends StatelessWidget {
                                       foregroundColor: Colors.black,
                                     ),
                                     icon: const Icon(Icons.play_arrow, size: 18),
-                                    label: const Text('Reanudar'),
+                                    label: Text(l10n.resume),
                                     onPressed: () {
                                       downloadProvider.resumeDownload(item.id);
                                     },
@@ -430,7 +446,7 @@ class DownloadsScreen extends StatelessWidget {
                                   const SizedBox(width: 8),
                                   IconButton(
                                     icon: const Icon(Icons.delete_outline, color: AppTheme.textMuted, size: 20),
-                                    tooltip: 'Eliminar descarga',
+                                    tooltip: l10n.delete,
                                     onPressed: () {
                                       downloadProvider.deleteDownload(item.id);
                                     },
@@ -447,7 +463,7 @@ class DownloadsScreen extends StatelessWidget {
                                       foregroundColor: Colors.black,
                                     ),
                                     icon: const Icon(Icons.play_arrow, size: 18),
-                                    label: const Text('Reproducir'),
+                                    label: Text(l10n.play),
                                     onPressed: () {
                                       Navigator.of(context).push(
                                         MaterialPageRoute(
@@ -464,7 +480,7 @@ class DownloadsScreen extends StatelessWidget {
                                   const SizedBox(width: 8),
                                   IconButton(
                                     icon: const Icon(Icons.folder_open, color: AppTheme.textSecondary, size: 20),
-                                    tooltip: 'Abrir en carpeta',
+                                    tooltip: l10n.openFolder,
                                     onPressed: () {
                                       downloadProvider.openItemInFileManager(item);
                                     },
@@ -472,7 +488,7 @@ class DownloadsScreen extends StatelessWidget {
                                   const SizedBox(width: 4),
                                   IconButton(
                                     icon: const Icon(Icons.delete_outline, color: AppTheme.textMuted, size: 20),
-                                    tooltip: 'Eliminar descarga',
+                                    tooltip: l10n.delete,
                                     onPressed: () {
                                       downloadProvider.deleteDownload(item.id);
                                     },

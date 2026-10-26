@@ -68,6 +68,15 @@
 
 ---
 
+## 🔒 Privacidad y Seguridad
+
+* **Privacidad 100% Local:** Listas de reproducción, credenciales, bases de datos EPG y vídeos descargados se conservan localmente en el dispositivo. Cero telemetría y sin envío de datos a servicios analíticos externos.
+* **Almacenamiento Cifrado de Credenciales (Keystore / Keychain):** Cifrado seguro de credenciales sensibles (como contraseñas del panel Xtream) empleando almacenamiento protegido por hardware (`flutter_secure_storage` mediante Apple Keychain y Android Keystore) en lugar de almacenamiento plano sin cifrar.
+* **Sanitización Estricta de URLs y Protección Anti-SSRF:** Validación rigurosa de que las URLs comiencen exclusivamente por `http://` o `https://` (rechazando esquemas no seguros como `file://`, `javascript://` o `content://`), con bloqueo proactivo de redirecciones maliciosas hacia IPs locales o de loopback (`localhost`, `127.0.0.1`, `::1`) desde el cliente HTTP.
+* **Sandbox Seguro:** Entitlements del sandbox de macOS que restringen estrictamente el acceso a sockets de red y archivos seleccionados por el usuario.
+
+---
+
 ## 🛠️ Documentos de Referencia
 - 📱 [Guía de Compatibilidad](COMPATIBILIDAD.md) • [English Version](COMPATIBILITY.md)
 - 📖 [Manual de Usuario](MANUAL_USUARIO.md) • [English Version](USER_MANUAL.md)

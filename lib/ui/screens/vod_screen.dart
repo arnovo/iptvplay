@@ -4,6 +4,7 @@ import '../../providers/catalog_provider.dart';
 import '../../providers/user_activity_provider.dart';
 import '../../models/vod_item.dart';
 import '../../models/sort_option.dart';
+import '../../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../widgets/category_sidebar.dart';
 import '../widgets/media_detail_sheet.dart';
@@ -19,6 +20,7 @@ class VodScreen extends StatelessWidget {
     final catalog = context.watch<CatalogProvider>();
     final userActivity = context.watch<UserActivityProvider>();
     final selectedCategory = catalog.selectedVodCategoryId;
+    final l10n = context.l10n;
 
     List<VodItem> vods;
     if (selectedCategory == '__fav__') {
@@ -43,7 +45,7 @@ class VodScreen extends StatelessWidget {
           customTopItems: [
             CategoryCustomItem(
               id: '__fav__',
-              name: 'Favoritos',
+              name: l10n.favorites,
               icon: Icons.star,
               count: userActivity.favVod.length,
             ),
@@ -64,9 +66,9 @@ class VodScreen extends StatelessWidget {
                     Expanded(
                       child: TextField(
                         onChanged: (val) => catalog.setVodSearch(val),
-                        decoration: const InputDecoration(
-                          hintText: 'Buscar películas...',
-                          prefixIcon: Icon(Icons.search, color: AppTheme.textMuted),
+                        decoration: InputDecoration(
+                          hintText: l10n.searchMovies,
+                          prefixIcon: const Icon(Icons.search, color: AppTheme.textMuted),
                           isDense: true,
                         ),
                       ),
@@ -92,7 +94,7 @@ class VodScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        '${vods.length} películas',
+                        '${vods.length} ${l10n.isEnglish ? "movies" : "películas"}',
                         style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
                       ),
                     ),
@@ -111,13 +113,13 @@ class VodScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Row(
+                      Row(
                         children: [
-                          Icon(Icons.history, size: 16, color: AppTheme.primary),
-                          SizedBox(width: 6),
+                          const Icon(Icons.history, size: 16, color: AppTheme.primary),
+                          const SizedBox(width: 6),
                           Text(
-                            'CONTINUAR VIENDO',
-                            style: TextStyle(
+                            l10n.isEnglish ? 'CONTINUE WATCHING' : 'CONTINUAR VIENDO',
+                            style: const TextStyle(
                               color: AppTheme.primary,
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
@@ -234,8 +236,10 @@ class VodScreen extends StatelessWidget {
                             const SizedBox(height: 12),
                             Text(
                               selectedCategory == '__fav__'
-                                  ? 'No tienes películas favoritas todavía'
-                                  : 'No se encontraron películas',
+                                  ? (l10n.isEnglish
+                                      ? 'No favorite movies yet'
+                                      : 'No tienes películas favoritas todavía')
+                                  : l10n.noMoviesFound,
                               style: const TextStyle(color: AppTheme.textSecondary),
                             ),
                           ],

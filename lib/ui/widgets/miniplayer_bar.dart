@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/playback_provider.dart';
+import '../../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 
 class MiniplayerBar extends StatelessWidget {
@@ -16,6 +17,7 @@ class MiniplayerBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final playback = context.watch<PlaybackProvider>();
 
     if (!playback.hasMedia) {
@@ -123,7 +125,7 @@ class MiniplayerBar extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              playback.currentTitle ?? 'Reproduciendo',
+                              playback.currentTitle ?? l10n.nowPlaying,
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,
@@ -145,9 +147,9 @@ class MiniplayerBar extends StatelessWidget {
                                     ),
                                   ),
                                   const SizedBox(width: 5),
-                                  const Text(
-                                    'EN DIRECTO',
-                                    style: TextStyle(
+                                  Text(
+                                    l10n.liveOnAir,
+                                    style: const TextStyle(
                                       color: AppTheme.accentRed,
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,
@@ -175,7 +177,7 @@ class MiniplayerBar extends StatelessWidget {
                           if (!isLive) ...[
                             IconButton(
                               icon: const Icon(Icons.replay_10, color: AppTheme.textSecondary, size: 22),
-                              tooltip: 'Retroceder 10 segundos',
+                              tooltip: l10n.seekRewind10sTooltip,
                               onPressed: () => playback.seekRelative(const Duration(seconds: -10)),
                             ),
                           ],
@@ -185,13 +187,13 @@ class MiniplayerBar extends StatelessWidget {
                               color: AppTheme.primary,
                               size: 36,
                             ),
-                            tooltip: playback.isPlaying ? 'Pausar' : 'Reproducir',
+                            tooltip: playback.isPlaying ? l10n.pause : l10n.play,
                             onPressed: () => playback.playOrPause(),
                           ),
                           if (!isLive) ...[
                             IconButton(
                               icon: const Icon(Icons.forward_10, color: AppTheme.textSecondary, size: 22),
-                              tooltip: 'Avanzar 10 segundos',
+                              tooltip: l10n.seekForward10sTooltip,
                               onPressed: () => playback.seekRelative(const Duration(seconds: 10)),
                             ),
                           ],
@@ -202,14 +204,14 @@ class MiniplayerBar extends StatelessWidget {
                       // Maximize / Expand button
                       IconButton(
                         icon: const Icon(Icons.open_in_full, color: AppTheme.textPrimary, size: 20),
-                        tooltip: 'Hacerlo más grande (Abrir reproductor)',
+                        tooltip: l10n.openPlayerTooltip,
                         onPressed: () => playback.maximizeCurrentPlayer(context),
                       ),
 
                       // Stop / Close button
                       IconButton(
                         icon: const Icon(Icons.close, color: AppTheme.textMuted, size: 20),
-                        tooltip: 'Detener y cerrar',
+                        tooltip: l10n.stopAndCloseTooltip,
                         onPressed: () => playback.stop(),
                       ),
                     ],

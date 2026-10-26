@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/sort_option.dart';
+import '../../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 
 class SortFilterButton extends StatelessWidget {
@@ -16,8 +17,10 @@ class SortFilterButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return PopupMenuButton<SortOption>(
-      tooltip: 'Ordenar contenido',
+      tooltip: l10n.sort,
       color: AppTheme.surfaceLight,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -40,7 +43,7 @@ class SortFilterButton extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    opt.label,
+                    l10n.sortLabel(opt),
                     style: TextStyle(
                       color: isSelected ? AppTheme.primary : Colors.white,
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -85,8 +88,8 @@ class SortFilterButton extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               currentOption == SortOption.defaultOrder
-                  ? 'Ordenar'
-                  : currentOption.label,
+                  ? l10n.sort
+                  : l10n.sortLabel(currentOption),
               style: TextStyle(
                 color: currentOption != SortOption.defaultOrder
                     ? AppTheme.primary

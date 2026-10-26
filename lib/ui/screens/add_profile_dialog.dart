@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../../models/playlist_profile.dart';
 import '../../providers/profile_provider.dart';
+import '../../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 
 class AddProfileDialog extends StatefulWidget {
@@ -47,7 +48,7 @@ class _AddProfileDialogState extends State<AddProfileDialog> with SingleTickerPr
 
   void _loadDemoM3u() {
     setState(() {
-      _m3uNameController.text = 'Canales Públicos Demo';
+      _m3uNameController.text = 'Public Demo Channels';
       _m3uUrlController.text = 'https://iptv-org.github.io/iptv/countries/es.m3u';
     });
   }
@@ -58,7 +59,7 @@ class _AddProfileDialogState extends State<AddProfileDialog> with SingleTickerPr
 
     if (name.isEmpty || url.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor completa el nombre y la URL')),
+        const SnackBar(content: Text('Please complete name and URL / Por favor completa el nombre y la URL')),
       );
       return;
     }
@@ -87,7 +88,7 @@ class _AddProfileDialogState extends State<AddProfileDialog> with SingleTickerPr
 
     if (name.isEmpty || server.isEmpty || user.isEmpty || pass.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor completa todos los campos de Xtream Codes')),
+        const SnackBar(content: Text('Please complete all Xtream fields / Por favor completa todos los campos de Xtream')),
       );
       return;
     }
@@ -112,6 +113,8 @@ class _AddProfileDialogState extends State<AddProfileDialog> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return Dialog(
       backgroundColor: AppTheme.surface,
       shape: RoundedRectangleBorder(
@@ -129,9 +132,9 @@ class _AddProfileDialogState extends State<AddProfileDialog> with SingleTickerPr
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Añadir Nueva Lista',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  Text(
+                    l10n.addList,
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close, color: AppTheme.textSecondary),
@@ -146,7 +149,7 @@ class _AddProfileDialogState extends State<AddProfileDialog> with SingleTickerPr
                 labelColor: AppTheme.primary,
                 unselectedLabelColor: AppTheme.textSecondary,
                 tabs: const [
-                  Tab(text: 'Lista M3U / URL'),
+                  Tab(text: 'M3U / URL'),
                   Tab(text: 'Xtream Codes API'),
                 ],
               ),
@@ -163,17 +166,17 @@ class _AddProfileDialogState extends State<AddProfileDialog> with SingleTickerPr
                         children: [
                           TextField(
                             controller: _m3uNameController,
-                            decoration: const InputDecoration(
-                              labelText: 'Nombre de la Lista',
-                              hintText: 'Ej. Mi Lista M3U',
+                            decoration: InputDecoration(
+                              labelText: l10n.playlistName,
+                              hintText: 'My Playlist / Mi Lista',
                             ),
                           ),
                           const SizedBox(height: 14),
                           TextField(
                             controller: _m3uUrlController,
-                            decoration: const InputDecoration(
-                              labelText: 'URL M3U / M3U8',
-                              hintText: 'https://ejemplo.com/lista.m3u',
+                            decoration: InputDecoration(
+                              labelText: l10n.m3uUrl,
+                              hintText: 'https://example.com/playlist.m3u',
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -184,7 +187,7 @@ class _AddProfileDialogState extends State<AddProfileDialog> with SingleTickerPr
                               side: const BorderSide(color: AppTheme.primary),
                             ),
                             icon: const Icon(Icons.bolt, size: 18),
-                            label: const Text('Cargar lista demo legal (España)'),
+                            label: const Text('Demo IPTV (Legal / Public)'),
                           ),
                           const SizedBox(height: 20),
                           ElevatedButton(
@@ -195,7 +198,7 @@ class _AddProfileDialogState extends State<AddProfileDialog> with SingleTickerPr
                                     height: 20,
                                     child: CircularProgressIndicator(strokeWidth: 2),
                                   )
-                                : const Text('Guardar y Cargar Lista'),
+                                : Text(l10n.saveAndLoad),
                           ),
                         ],
                       ),
@@ -208,17 +211,17 @@ class _AddProfileDialogState extends State<AddProfileDialog> with SingleTickerPr
                         children: [
                           TextField(
                             controller: _xtreamNameController,
-                            decoration: const InputDecoration(
-                              labelText: 'Nombre del Perfil',
-                              hintText: 'Ej. Mi Proveedor',
+                            decoration: InputDecoration(
+                              labelText: l10n.playlistName,
+                              hintText: 'Xtream Provider',
                             ),
                           ),
                           const SizedBox(height: 10),
                           TextField(
                             controller: _xtreamServerController,
-                            decoration: const InputDecoration(
-                              labelText: 'URL del Servidor',
-                              hintText: 'http://servidor.com:8080',
+                            decoration: InputDecoration(
+                              labelText: l10n.xtreamServer,
+                              hintText: 'http://server.com:8080',
                             ),
                           ),
                           const SizedBox(height: 10),
@@ -227,8 +230,8 @@ class _AddProfileDialogState extends State<AddProfileDialog> with SingleTickerPr
                               Expanded(
                                 child: TextField(
                                   controller: _xtreamUserController,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Usuario',
+                                  decoration: InputDecoration(
+                                    labelText: l10n.username,
                                   ),
                                 ),
                               ),
@@ -237,8 +240,8 @@ class _AddProfileDialogState extends State<AddProfileDialog> with SingleTickerPr
                                 child: TextField(
                                   controller: _xtreamPassController,
                                   obscureText: true,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Contraseña',
+                                  decoration: InputDecoration(
+                                    labelText: l10n.password,
                                   ),
                                 ),
                               ),
@@ -253,7 +256,7 @@ class _AddProfileDialogState extends State<AddProfileDialog> with SingleTickerPr
                                     height: 20,
                                     child: CircularProgressIndicator(strokeWidth: 2),
                                   )
-                                : const Text('Conectar y Guardar Cuenta'),
+                                : Text(l10n.saveAndLoad),
                           ),
                         ],
                       ),

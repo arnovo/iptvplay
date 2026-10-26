@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../models/playlist_profile.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/catalog_provider.dart';
+import '../../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import 'add_profile_dialog.dart';
 
@@ -14,10 +15,11 @@ class ProfileListScreen extends StatelessWidget {
     final profileProvider = context.watch<ProfileProvider>();
     final profiles = profileProvider.profiles;
     final activeProfile = profileProvider.activeProfile;
+    final l10n = context.l10n;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Gestión de Listas y Cuentas'),
+        title: Text(l10n.manageProfiles),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new),
           onPressed: () => Navigator.of(context).pop(),
@@ -25,7 +27,7 @@ class ProfileListScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.add, color: AppTheme.primary),
-            tooltip: 'Añadir nueva lista',
+            tooltip: l10n.addList,
             onPressed: () {
               showDialog(
                 context: context,
@@ -42,14 +44,14 @@ class ProfileListScreen extends StatelessWidget {
                 children: [
                   Icon(Icons.playlist_play, size: 80, color: AppTheme.textMuted.withValues(alpha: 0.5)),
                   const SizedBox(height: 16),
-                  const Text(
-                    'No tienes listas añadidas',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  Text(
+                    l10n.noActiveProfile,
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Añade una lista M3U o cuenta de Xtream Codes para empezar',
-                    style: TextStyle(color: AppTheme.textSecondary),
+                  Text(
+                    l10n.welcomeSubtitle,
+                    style: const TextStyle(color: AppTheme.textSecondary),
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton.icon(
@@ -60,7 +62,7 @@ class ProfileListScreen extends StatelessWidget {
                       );
                     },
                     icon: const Icon(Icons.add),
-                    label: const Text('Añadir Primera Lista'),
+                    label: Text(l10n.addPlaylistButton),
                   ),
                 ],
               ),
@@ -131,9 +133,9 @@ class ProfileListScreen extends StatelessWidget {
                                         color: AppTheme.primary.withValues(alpha: 0.2),
                                         borderRadius: BorderRadius.circular(6),
                                       ),
-                                      child: const Text(
-                                        'ACTIVA',
-                                        style: TextStyle(
+                                      child: Text(
+                                        l10n.activeBadge,
+                                        style: const TextStyle(
                                           color: AppTheme.primary,
                                           fontSize: 10,
                                           fontWeight: FontWeight.bold,
@@ -162,17 +164,17 @@ class ProfileListScreen extends StatelessWidget {
                               context: context,
                               builder: (ctx) => AlertDialog(
                                 backgroundColor: AppTheme.surface,
-                                title: const Text('¿Eliminar lista?'),
-                                content: Text('¿Seguro que deseas eliminar "${profile.name}"?'),
+                                title: Text(l10n.confirmDeleteTitle),
+                                content: Text(l10n.confirmDeleteMessage(profile.name)),
                                 actions: [
                                   TextButton(
                                     onPressed: () => Navigator.of(ctx).pop(false),
-                                    child: const Text('Cancelar'),
+                                    child: Text(l10n.cancel),
                                   ),
                                   ElevatedButton(
                                     style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentRed),
                                     onPressed: () => Navigator.of(ctx).pop(true),
-                                    child: const Text('Eliminar'),
+                                    child: Text(l10n.delete),
                                   ),
                                 ],
                               ),

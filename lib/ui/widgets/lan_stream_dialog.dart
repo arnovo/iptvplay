@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/stream_server_provider.dart';
+import '../../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 
 class LanStreamDialog extends StatefulWidget {
@@ -51,6 +52,7 @@ class _LanStreamDialogState extends State<LanStreamDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final serverProvider = context.watch<StreamServerProvider>();
     final isRunning = serverProvider.isRunning;
     final rawUrl = serverProvider.rawStreamUrl ?? 'http://127.0.0.1:8088/stream.ts';
@@ -87,9 +89,9 @@ class _LanStreamDialogState extends State<LanStreamDialog> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Reenviar Vídeo por URL (Red Local)',
-                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                        Text(
+                          l10n.lanRelayTitle,
+                          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                         ),
                         Text(
                           widget.title,
@@ -132,8 +134,8 @@ class _LanStreamDialogState extends State<LanStreamDialog> {
                   Expanded(
                     child: Text(
                       isRunning
-                          ? 'Servidor activo en tu red local • $clients dispositivo(s) conectado(s)'
-                          : 'Servidor detenido',
+                          ? l10n.lanServerActiveStatus(clients)
+                          : l10n.lanServerStoppedStatus,
                       style: TextStyle(
                         color: isRunning ? AppTheme.accentGreen : AppTheme.accentRed,
                         fontSize: 13,
@@ -159,13 +161,13 @@ class _LanStreamDialogState extends State<LanStreamDialog> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      children: const [
-                        Icon(Icons.tv, color: AppTheme.primary, size: 20),
-                        SizedBox(width: 8),
+                      children: [
+                        const Icon(Icons.tv, color: AppTheme.primary, size: 20),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Enlace de Flujo Continuo (stream.ts)',
-                            style: TextStyle(
+                            l10n.lanContinuousStreamCardTitle,
+                            style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
@@ -205,7 +207,7 @@ class _LanStreamDialogState extends State<LanStreamDialog> {
                             ),
                             icon: Icon(_isCopiedStream ? Icons.check : Icons.copy, size: 15),
                             label: Text(
-                              _isCopiedStream ? '¡Copiado!' : 'Copiar URL',
+                              _isCopiedStream ? l10n.copied : l10n.copyUrlAction,
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                             ),
                             onPressed: isRunning ? () => _copyToClipboard(rawUrl) : null,
@@ -214,9 +216,9 @@ class _LanStreamDialogState extends State<LanStreamDialog> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    const Text(
-                      '📺 Reproducción nativa en VLC ("Abrir red"), Smart TV (TiviMate, SS IPTV), Kodi, Infuse o cualquier reproductor en tu red local con audio y vídeo completos.',
-                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 12, height: 1.4),
+                    Text(
+                      l10n.lanServerInfoNote,
+                      style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12, height: 1.4),
                     ),
                   ],
                 ),
@@ -235,7 +237,7 @@ class _LanStreamDialogState extends State<LanStreamDialog> {
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       ),
                       icon: const Icon(Icons.stop, size: 18),
-                      label: const Text('Detener Reenvío'),
+                      label: Text(l10n.stopRelay),
                       onPressed: () {
                         serverProvider.stopSharing();
                       },
@@ -248,7 +250,7 @@ class _LanStreamDialogState extends State<LanStreamDialog> {
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       ),
                       icon: const Icon(Icons.play_arrow, size: 18),
-                      label: const Text('Iniciar Reenvío'),
+                      label: Text(l10n.startRelay),
                       onPressed: () {
                         serverProvider.startSharing(
                           targetStreamUrl: widget.streamUrl,
@@ -262,7 +264,7 @@ class _LanStreamDialogState extends State<LanStreamDialog> {
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     ),
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Cerrar'),
+                    child: Text(l10n.close),
                   ),
                 ],
               ),

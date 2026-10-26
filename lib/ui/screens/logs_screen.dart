@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../models/app_log.dart';
 import '../../providers/log_provider.dart';
+import '../../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 
 class LogsScreen extends StatefulWidget {
@@ -24,6 +25,7 @@ class _LogsScreenState extends State<LogsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final logProvider = context.watch<LogProvider>();
     final logs = logProvider.filteredLogs;
 
@@ -51,17 +53,17 @@ class _LogsScreenState extends State<LogsScreen> {
                   child: const Icon(Icons.receipt_long, color: AppTheme.primary, size: 24),
                 ),
                 const SizedBox(width: 14),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Registro de Actividad y Logs',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        l10n.logsTitle,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        'Historial de eventos de red, reproductor, descargas y estado del sistema',
-                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                        l10n.logsSubtitle,
+                        style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
                       ),
                     ],
                   ),
@@ -73,14 +75,14 @@ class _LogsScreenState extends State<LogsScreen> {
                     side: const BorderSide(color: AppTheme.border),
                   ),
                   icon: const Icon(Icons.copy, size: 16),
-                  label: const Text('Copiar registros'),
+                  label: Text(l10n.copyLogs),
                   onPressed: () {
                     final text = logProvider.exportFormattedText();
                     Clipboard.setData(ClipboardData(text: text));
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Registros copiados al portapapeles'),
-                        duration: Duration(seconds: 2),
+                      SnackBar(
+                        content: Text(l10n.logsCopiedToast),
+                        duration: const Duration(seconds: 2),
                       ),
                     );
                   },
@@ -93,18 +95,18 @@ class _LogsScreenState extends State<LogsScreen> {
                     foregroundColor: AppTheme.accentRed,
                   ),
                   icon: const Icon(Icons.delete_sweep, size: 16),
-                  label: const Text('Limpiar'),
+                  label: Text(l10n.clearLogs),
                   onPressed: () {
                     showDialog(
                       context: context,
                       builder: (ctx) => AlertDialog(
                         backgroundColor: AppTheme.surface,
-                        title: const Text('¿Vaciar registros?'),
-                        content: const Text('Se eliminarán todos los registros guardados del sistema.'),
+                        title: Text(l10n.clearLogsConfirmTitle),
+                        content: Text(l10n.clearLogsConfirmMessage),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.of(ctx).pop(),
-                            child: const Text('Cancelar'),
+                            child: Text(l10n.cancel),
                           ),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentRed),
@@ -112,7 +114,7 @@ class _LogsScreenState extends State<LogsScreen> {
                               logProvider.clearLogs();
                               Navigator.of(ctx).pop();
                             },
-                            child: const Text('Vaciar', style: TextStyle(color: Colors.white)),
+                            child: Text(l10n.confirmClear, style: const TextStyle(color: Colors.white)),
                           ),
                         ],
                       ),
@@ -133,7 +135,7 @@ class _LogsScreenState extends State<LogsScreen> {
             child: Row(
               children: [
                 _buildStatPill(
-                  label: 'Todos',
+                  label: l10n.all,
                   count: logProvider.totalCount,
                   color: Colors.white,
                   isSelected: logProvider.filterLevel == null,
@@ -141,7 +143,7 @@ class _LogsScreenState extends State<LogsScreen> {
                 ),
                 const SizedBox(width: 10),
                 _buildStatPill(
-                  label: 'Errores',
+                  label: l10n.errors,
                   count: logProvider.errorCount,
                   color: AppTheme.accentRed,
                   isSelected: logProvider.filterLevel == LogLevel.error,
@@ -151,7 +153,7 @@ class _LogsScreenState extends State<LogsScreen> {
                 ),
                 const SizedBox(width: 10),
                 _buildStatPill(
-                  label: 'Advertencias',
+                  label: l10n.warnings,
                   count: logProvider.warningCount,
                   color: AppTheme.accentYellow,
                   isSelected: logProvider.filterLevel == LogLevel.warning,
@@ -161,7 +163,7 @@ class _LogsScreenState extends State<LogsScreen> {
                 ),
                 const SizedBox(width: 10),
                 _buildStatPill(
-                  label: 'Información',
+                  label: l10n.info,
                   count: logProvider.infoCount,
                   color: AppTheme.primary,
                   isSelected: logProvider.filterLevel == LogLevel.info,
@@ -171,7 +173,7 @@ class _LogsScreenState extends State<LogsScreen> {
                 ),
                 const SizedBox(width: 10),
                 _buildStatPill(
-                  label: 'Éxitos',
+                  label: l10n.successes,
                   count: logProvider.successCount,
                   color: AppTheme.accentGreen,
                   isSelected: logProvider.filterLevel == LogLevel.success,
@@ -197,7 +199,7 @@ class _LogsScreenState extends State<LogsScreen> {
                   controller: _searchController,
                   onChanged: (val) => logProvider.setSearchQuery(val),
                   decoration: InputDecoration(
-                    hintText: 'Filtrar por mensaje, URL o detalle...',
+                    hintText: l10n.searchLogs,
                     prefixIcon: const Icon(Icons.search, color: AppTheme.textMuted),
                     suffixIcon: _searchController.text.isNotEmpty
                         ? IconButton(
@@ -217,7 +219,7 @@ class _LogsScreenState extends State<LogsScreen> {
                   child: Row(
                     children: [
                       _buildCategoryChip(
-                        label: 'Todas las categorías',
+                        label: l10n.allCategories,
                         icon: Icons.apps,
                         isSelected: logProvider.filterCategory == null,
                         onTap: () => logProvider.setFilterCategory(null),
@@ -226,7 +228,7 @@ class _LogsScreenState extends State<LogsScreen> {
                         return Padding(
                           padding: const EdgeInsets.only(left: 8),
                           child: _buildCategoryChip(
-                            label: cat.label,
+                            label: l10n.logCategoryLabel(cat),
                             icon: cat.icon,
                             isSelected: logProvider.filterCategory == cat,
                             onTap: () => logProvider.setFilterCategory(
@@ -251,14 +253,14 @@ class _LogsScreenState extends State<LogsScreen> {
                       children: [
                         Icon(Icons.inbox, size: 54, color: AppTheme.textMuted.withValues(alpha: 0.4)),
                         const SizedBox(height: 12),
-                        const Text(
-                          'No hay registros con los filtros seleccionados',
-                          style: TextStyle(color: AppTheme.textSecondary, fontSize: 15, fontWeight: FontWeight.bold),
+                        Text(
+                          l10n.noLogsFound,
+                          style: const TextStyle(color: AppTheme.textSecondary, fontSize: 15, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          'Los eventos del reproductor, red y descargas aparecerán aquí automáticamente',
-                          style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
+                        Text(
+                          l10n.noLogsSubtitle,
+                          style: const TextStyle(color: AppTheme.textMuted, fontSize: 13),
                         ),
                       ],
                     ),
@@ -349,7 +351,7 @@ class _LogsScreenState extends State<LogsScreen> {
                                                     Icon(log.category.icon, size: 11, color: AppTheme.textSecondary),
                                                     const SizedBox(width: 4),
                                                     Text(
-                                                      log.category.label,
+                                                      l10n.logCategoryLabel(log.category),
                                                       style: const TextStyle(color: AppTheme.textSecondary, fontSize: 10),
                                                     ),
                                                   ],
@@ -408,8 +410,8 @@ class _LogsScreenState extends State<LogsScreen> {
                                   children: [
                                     Row(
                                       children: [
-                                        const Text(
-                                          'DETALLES TÉCNICOS',
+                                        Text(
+                                          l10n.technicalDetails,
                                           style: TextStyle(
                                             color: AppTheme.textMuted,
                                             fontSize: 10,
@@ -422,19 +424,19 @@ class _LogsScreenState extends State<LogsScreen> {
                                           onTap: () {
                                             Clipboard.setData(ClipboardData(text: log.details!));
                                             ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(
-                                                content: Text('Detalle copiado'),
+                                              SnackBar(
+                                                content: Text(l10n.detailCopied),
                                                 duration: Duration(seconds: 1),
                                               ),
                                             );
                                           },
-                                          child: const Row(
+                                          child: Row(
                                             children: [
-                                              Icon(Icons.copy, size: 12, color: AppTheme.primary),
-                                              SizedBox(width: 4),
+                                              const Icon(Icons.copy, size: 12, color: AppTheme.primary),
+                                              const SizedBox(width: 4),
                                               Text(
-                                                'Copiar',
-                                                style: TextStyle(color: AppTheme.primary, fontSize: 11),
+                                                l10n.copy,
+                                                style: const TextStyle(color: AppTheme.primary, fontSize: 11),
                                               ),
                                             ],
                                           ),

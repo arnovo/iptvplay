@@ -5,6 +5,7 @@ import '../../providers/profile_provider.dart';
 import '../../providers/user_activity_provider.dart';
 import '../../models/series_item.dart';
 import '../../models/sort_option.dart';
+import '../../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../widgets/category_sidebar.dart';
 import '../widgets/sort_filter_button.dart';
@@ -19,6 +20,7 @@ class SeriesScreen extends StatelessWidget {
     final catalog = context.watch<CatalogProvider>();
     final userActivity = context.watch<UserActivityProvider>();
     final selectedCategory = catalog.selectedSeriesCategoryId;
+    final l10n = context.l10n;
 
     List<SeriesItem> seriesList;
     if (selectedCategory == '__fav__') {
@@ -42,7 +44,7 @@ class SeriesScreen extends StatelessWidget {
           customTopItems: [
             CategoryCustomItem(
               id: '__fav__',
-              name: 'Favoritos',
+              name: l10n.favorites,
               icon: Icons.star,
               count: userActivity.favSeries.length,
             ),
@@ -63,9 +65,9 @@ class SeriesScreen extends StatelessWidget {
                     Expanded(
                       child: TextField(
                         onChanged: (val) => catalog.setSeriesSearch(val),
-                        decoration: const InputDecoration(
-                          hintText: 'Buscar series...',
-                          prefixIcon: Icon(Icons.search, color: AppTheme.textMuted),
+                        decoration: InputDecoration(
+                          hintText: l10n.searchSeries,
+                          prefixIcon: const Icon(Icons.search, color: AppTheme.textMuted),
                           isDense: true,
                         ),
                       ),
@@ -91,7 +93,7 @@ class SeriesScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        '${seriesList.length} series',
+                        '${seriesList.length} ${l10n.isEnglish ? "series" : "series"}',
                         style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
                       ),
                     ),
@@ -114,8 +116,10 @@ class SeriesScreen extends StatelessWidget {
                             const SizedBox(height: 12),
                             Text(
                               selectedCategory == '__fav__'
-                                  ? 'No tienes series favoritas todavía'
-                                  : 'No se encontraron series',
+                                  ? (l10n.isEnglish
+                                      ? 'No favorite series yet'
+                                      : 'No tienes series favoritas todavía')
+                                  : l10n.noSeriesFound,
                               style: const TextStyle(color: AppTheme.textSecondary),
                             ),
                           ],
@@ -252,6 +256,7 @@ class SeriesScreen extends StatelessWidget {
   void _showSeriesEpisodes(BuildContext context, SeriesItem series) async {
     final profile = context.read<ProfileProvider>().activeProfile;
     final userActivity = context.read<UserActivityProvider>();
+    final l10n = context.l10n;
     if (profile == null) return;
 
     showModalBottomSheet(
@@ -335,9 +340,9 @@ class SeriesScreen extends StatelessWidget {
                       const SizedBox(height: 16),
                       const Divider(color: AppTheme.border),
                       const SizedBox(height: 8),
-                      const Text(
-                        'EPISODIOS DISPONIBLES',
-                        style: TextStyle(
+                      Text(
+                        l10n.isEnglish ? 'AVAILABLE EPISODES' : 'EPISODIOS DISPONIBLES',
+                        style: const TextStyle(
                           color: AppTheme.textMuted,
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -351,10 +356,10 @@ class SeriesScreen extends StatelessWidget {
                                 child: CircularProgressIndicator(color: AppTheme.primary),
                               )
                             : episodes.isEmpty
-                                ? const Center(
+                                ? Center(
                                     child: Text(
-                                      'No se encontraron episodios',
-                                      style: TextStyle(color: AppTheme.textSecondary),
+                                      l10n.isEnglish ? 'No episodes found' : 'No se encontraron episodios',
+                                      style: const TextStyle(color: AppTheme.textSecondary),
                                     ),
                                   )
                                 : ListView.separated(
@@ -364,6 +369,7 @@ class SeriesScreen extends StatelessWidget {
                                     itemBuilder: (context, epIndex) {
                                       final ep = episodes[epIndex];
                                       final progress = userActivity.getProgress(ep.id);
+                                      final seasonPrefix = l10n.isEnglish ? 'S' : 'T';
 
                                       return ListTile(
                                         contentPadding: const EdgeInsets.symmetric(vertical: 4),
@@ -374,7 +380,7 @@ class SeriesScreen extends StatelessWidget {
                                             borderRadius: BorderRadius.circular(8),
                                           ),
                                           child: Text(
-                                            'T${ep.seasonNum} E${ep.episodeNum}',
+                                            '$seasonPrefix${ep.seasonNum} E${ep.episodeNum}',
                                             style: const TextStyle(
                                               fontWeight: FontWeight.bold,
                                               fontSize: 12,

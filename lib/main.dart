@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
@@ -12,6 +13,8 @@ import 'providers/download_provider.dart';
 import 'providers/stream_server_provider.dart';
 import 'providers/log_provider.dart';
 import 'providers/playback_provider.dart';
+import 'providers/language_provider.dart';
+import 'l10n/app_localizations.dart';
 import 'ui/theme/app_theme.dart';
 import 'ui/screens/home_shell_screen.dart';
 
@@ -26,6 +29,7 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => LanguageProvider()),
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
         ChangeNotifierProvider(create: (_) => CatalogProvider()),
         ChangeNotifierProvider(create: (_) => UserActivityProvider()),
@@ -45,10 +49,20 @@ class IptvApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final languageProvider = context.watch<LanguageProvider>();
+
     return MaterialApp(
       title: 'IPTV Play',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
+      locale: languageProvider.locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       home: const HomeShellScreen(),
     );
   }

@@ -89,6 +89,8 @@ LogService.instance.error(
 
 ### 8. Security and Privacy
 - Never commit passwords, credentials, private URLs with auth tokens, or certificates to source control.
+- **Credential Encryption:** Protect sensitive passwords (such as Xtream panel passwords) using hardware-backed encrypted storage (`flutter_secure_storage` with Keychain/Keystore) rather than unencrypted plain local persistence.
+- **URL Sanitization & SSRF Protection:** Strictly validate that all network URLs begin exclusively with `http://` or `https://` and block outbound requests or redirects targeting local loopback addresses (`localhost`, `127.0.0.1`, `::1`) from the HTTP client.
 - Maintain `.gitignore` with exclusions for `*.env`, `*.jks`, `*.keystore`, `*.p12`, `iptv_cache/`, and `iptv_offline/`.
 
 ### 9. Documentation Synchronization

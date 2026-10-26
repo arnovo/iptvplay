@@ -144,8 +144,9 @@ lib/
 
 ## 🔒 Privacy & Security
 
-* **100% Local Storage:** Playlists, credentials, EPG databases, and downloaded videos are kept locally in the sandboxed app folder.
-* **No Telemetry / No Tracking:** No data is sent to external analytical services.
+* **100% Local Privacy:** Playlists, credentials, EPG databases, and downloaded videos are kept locally on device. No telemetry or analytics are sent to external services.
+* **Encrypted Credential Storage (Hardware Keystore / Keychain):** Sensitive credentials (such as Xtream account passwords) should be secured using hardware-backed storage (`flutter_secure_storage` via Apple Keychain and Android Keystore) rather than unencrypted plain local storage.
+* **Strict URL Sanitization & SSRF Protection:** Network requests strictly validate that URLs begin exclusively with `http://` or `https://` (disallowing dangerous schemes like `file://`, `javascript://`, or `content://`), and enforce anti-SSRF policies blocking rogue redirects to loopback/local IPs (`localhost`, `127.0.0.1`, `::1`, cloud metadata endpoints) from the HTTP client.
 * **Secure Sandbox:** macOS App Sandbox entitlements strictly limit access to network sockets and user-selected files.
 
 ---
