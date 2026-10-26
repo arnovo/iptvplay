@@ -9,6 +9,8 @@ import '../../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../widgets/category_sidebar.dart';
 import '../widgets/sort_filter_button.dart';
+import '../../services/parental_service.dart';
+import '../widgets/voice_search_dialog.dart';
 import '../widgets/tv_focusable.dart';
 import 'player_screen.dart';
 
@@ -19,8 +21,18 @@ class SeriesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final catalog = context.watch<CatalogProvider>();
     final userActivity = context.watch<UserActivityProvider>();
+    final parental = context.watch<ParentalService>();
     final selectedCategory = catalog.selectedSeriesCategoryId;
     final l10n = context.l10n;
+
+    final restrictedCategoryIds = <String>{};
+    final categories = catalog.content.seriesCategories.where((c) {
+      if (parental.isCategoryRestricted(categoryId: c.id, categoryName: c.name)) {
+        restrictedCategoryIds.add(c.id);
+        return false;
+      }
+      return true;
+    }).toList();
 
     List<SeriesItem> seriesList;
     if (selectedCategory == '__fav__') {
@@ -32,7 +44,9 @@ class SeriesScreen extends StatelessWidget {
       seriesList = catalog.filteredSeries;
     }
 
-    final categories = catalog.content.seriesCategories;
+    if (restrictedCategoryIds.isNotEmpty) {
+      seriesList = seriesList.where((s) => !restrictedCategoryIds.contains(s.categoryId)).toList();
+    }
 
     return Row(
       children: [
@@ -68,6 +82,20 @@ class SeriesScreen extends StatelessWidget {
                         decoration: InputDecoration(
                           hintText: l10n.searchSeries,
                           prefixIcon: const Icon(Icons.search, color: AppTheme.textMuted),
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.mic, color: AppTheme.primary, size: 20),
+                            tooltip: 'Búsqueda por Voz en Smart TV',
+                            onPressed: () async {
+                              final query = await VoiceSearchDialog.show(
+                                context,
+                                currentQuery: catalog.seriesSearchQuery,
+                                title: 'Buscar Series por Voz',
+                              );
+                              if (query != null) {
+                                catalog.setSeriesSearch(query);
+                              }
+                            },
+                          ),
                           isDense: true,
                         ),
                       ),

@@ -26,11 +26,15 @@ flowchart LR
 ## 📑 Índice de Secciones
 
 1. [Paso 1: Añadir tu Lista de Canales](#-paso-1-añadir-tu-lista-de-canales)
-2. [Paso 2: Ver Televisión en Directo (Live TV)](#-paso-2-ver-televisión-en-directo-live-tv)
-3. [Paso 3: Películas y Series a la Carta (VOD)](#-paso-3-películas-y-series-a-la-carta-vod)
-4. [Paso 4: Grabaciones (PVR) y Descargas Offline](#-paso-4-grabaciones-pvr-y-descargas-offline)
-5. [Paso 5: Cómo Usar el Mando a Distancia en la Tele](#-paso-5-cómo-usar-el-mando-a-distancia-en-la-tele)
-6. [Atajos de Teclado Útiles](#-atajos-de-teclado-útiles)
+2. [Paso 2: Inicio (Home Hub) y TV en Directo](#-paso-2-inicio-home-hub-y-tv-en-directo)
+3. [Paso 3: Multiview (Pantalla Dividida hasta 4 Canales)](#-paso-3-multiview-pantalla-dividida-hasta-4-canales)
+4. [Paso 4: Guía EPG en Cuadrícula y Recordatorios](#-paso-4-guía-epg-en-cuadrícula-y-recordatorios)
+5. [Paso 5: Subtítulos Externos y Audio Dual Avanzado](#-paso-5-subtítulos-externos-y-audio-dual-avanzado)
+6. [Paso 6: Control Parental y Modo Infantil](#-paso-6-control-parental-y-modo-infantil)
+7. [Paso 7: Películas y Series a la Carta (VOD)](#-paso-7-películas-y-series-a-la-carta-vod)
+8. [Paso 8: Grabaciones (PVR) y Descargas Offline](#-paso-8-grabaciones-pvr-y-descargas-offline)
+9. [Paso 9: Copias de Seguridad Cifradas (AES-256)](#-paso-9-copias-de-seguridad-cifradas-aes-256)
+10. [Mando de Smart TV y Atajos de Teclado](#-mando-de-smart-tv-y-atajos-de-teclado)
 
 ---
 
@@ -53,26 +57,25 @@ Al abrir la aplicación por primera vez, verás la opción de vincular tu provee
 ```
 
 3. Pulsa el botón **"Guardar y Cargar"**.
-4. ¡Listo! En unos segundos se descargarán automáticamente los canales, los logotipos y la guía electrónica de programación (**EPG**).
+4. ¡Listo! Las contraseñas quedan protegidas automáticamente mediante cifrado por hardware en Keychain/Keystore.
 
 <div align="center">
   <img src="docs/screenshots/welcome_screen.png" alt="Pantalla de bienvenida IPTV Play" width="700"/>
 </div>
 
-> [!TIP]
-> Puedes tener **múltiples listas guardadas** simultáneamente. Para cambiar de una lista a otra, simplemente pulsa en la tarjeta de perfil arriba a la izquierda.
-
 ---
 
-## 📺 Paso 2: Ver Televisión en Directo (Live TV)
+## 🏠 Paso 2: Inicio (Home Hub) y TV en Directo
 
-1. En el menú de la izquierda, entra en **"TV en Vivo"**.
-2. **Explorador de Categorías:**
-   * En la barra lateral encontrarás los grupos organizados (*Deportes, Cine, Documentales, Noticias, etc.*).
-   * Arriba del todo siempre tendrás a mano tus **⭐ Favoritos** y tus **🕒 Canales Recientes**.
-3. **Buscar Canal:** Usa la barra de búsqueda superior para encontrar cualquier canal escribiendo su nombre.
-4. **Reproducir:** Haz clic o pulsa <kbd>OK</kbd> sobre cualquier canal para abrirlo en el reproductor a pantalla completa.
-5. **Guía de Programación (EPG):** Junto a cada canal verás qué programa se está emitiendo ahora mismo y una barra de progreso. Pulsa el icono del calendario <kbd>📅</kbd> para consultar la programación de las próximas horas.
+1. **Pantalla de Inicio ("Home Hub"):** Centro de contenidos estilo Netflix / Plex:
+   * **Banner Destacado:** Grandes estrenos y eventos deportivos destacados.
+   * **Continuar Viendo:** Retoma películas y series con barra de progreso y minutos restantes.
+   * **Canales Favoritos:** Vista previa con el programa que se está emitiendo en directo ahora mismo.
+   * **Recordatorios de Emisión:** Próximos programas agendados con cuenta atrás.
+2. **TV en Directo:**
+   * Organiza canales por categorías, favoritos o recientes.
+   * **Búsqueda por Voz:** Pulsa el icono de micrófono para dictar títulos o géneros con el mando.
+   * Pulsa cualquier canal para reproducirlo a pantalla completa.
 
 <div align="center">
   <img src="docs/screenshots/live_player.png" alt="Reproductor de TV en Vivo IPTV Play" width="700"/>
@@ -80,47 +83,86 @@ Al abrir la aplicación por primera vez, verás la opción de vincular tu provee
 
 ---
 
-## 🎬 Paso 3: Películas y Series a la Carta (VOD)
+## 🔲 Paso 3: Multiview (Pantalla Dividida hasta 4 Canales)
+
+Disfruta de varios partidos o eventos en directo de forma simultánea:
+1. En la pantalla de TV en Vivo, pulsa el botón **"Multiview"**.
+2. Elige la distribución deseada (cuadrícula 2x2 o división 2x1).
+3. Añade hasta 4 canales simultáneos.
+4. **Foco de Audio Inteligente:** Con la cruceta del mando (D-Pad), desplázate a cualquier cuadrícula para escuchar su audio al instante sin detener la imagen de las demás.
+
+---
+
+## 📅 Paso 4: Guía EPG en Cuadrícula y Recordatorios
+
+1. Pulsa **"Guía TV"** para abrir la cuadrícula tradicional tipo decodificador de satélite o cable.
+2. Navega horizontalmente por bloques de 30 minutos coordinados con la línea cian "AHORA".
+3. Pulsa sobre cualquier programa futuro para activar un **Recordatorio de Emisión**.
+4. Al comenzar el programa, aparecerá una alerta emergente con el botón **"VER AHORA"** para sintonizar el canal en 1 clic.
+
+---
+
+## 💬 Paso 5: Subtítulos Externos y Audio Dual Avanzado
+
+1. Durante la reproducción, pulsa el icono de **Subtítulos**:
+   * **Buscar en Línea:** Descarga subtítulos en español o cualquier idioma vía OpenSubtitles.
+   * **Archivo Local:** Carga archivos `.srt` o `.vtt` almacenados en tu televisor o disco.
+2. Pulsa el icono de **Audio** para elegir la pista deseada con banderas de idioma e insignias de calidad (`DOLBY ATMOS`, `5.1 SURROUND`, `STEREO`).
+
+---
+
+## 🛡️ Paso 6: Control Parental y Modo Infantil
+
+1. Accede a **"Control Parental"** en la barra de navegación.
+2. Configura un PIN de 4 dígitos usando el teclado físico o el **Teclado Numérico Virtual** en pantalla con el mando.
+3. Elige tus preferencias:
+   * **Ocultar adultos:** Bloquea y esconde automáticamente canales y películas (+18 / XXX).
+   * **Bloquear Ajustes:** Requiere el PIN para editar o borrar perfiles y realizar copias de seguridad.
+
+---
+
+## 🎬 Paso 7: Películas y Series a la Carta (VOD)
 
 1. Selecciona **"Películas (VOD)"** o **"Series"** en el menú principal.
 2. Navega por las carátulas con sus notas de valoración de la comunidad y categorías.
 3. **Detalles y Sinopsis:** Pulsa sobre cualquier título para abrir su ficha completa con argumento, año y duración.
 4. **En las Series:** Puedes desplegar las temporadas y elegir cualquier episodio individual.
-5. **Reanudación Automática:** Si dejas una película o serie a medias, la app guardará el punto exacto y te lo mostrará en la fila superior **"Continuar viendo"**.
 
 ---
 
-## ⏺️ Paso 4: Grabaciones (PVR) y Descargas Offline
+## ⏺️ Paso 8: Grabaciones (PVR) y Descargas Offline
 
-* **🔴 Grabar un directo (PVR):** Mientras estás viendo un canal, pulsa el botón redondo de grabación **REC**. La emisión se guardará en segundo plano en tu disco local. Pulsa de nuevo para detener la grabación.
-* **💾 Descargar películas o episodios:** En la ficha de cualquier película o episodio, pulsa **"Descargar"**. Podrás verla aunque te quedes sin conexión a internet.
-* **📂 Administrar contenidos:** Entra en la sección **"Descargas & PVR"** del menú para reproducir tus contenidos grabados, reanudar descargas o liberar espacio.
-
-> [!NOTE]
-> Las descargas de películas soportan **reanudación inteligente**: si se corta la conexión WiFi o apagas el equipo, se retomará desde el punto exacto sin volver a descargar desde cero.
+* **🔴 Grabar un directo (PVR):** Mientras estás viendo un canal, pulsa el botón redondo de grabación **REC**. La emisión se guardará en segundo plano en tu disco local.
+* **💾 Descargar películas o episodios:** En la ficha de cualquier película o episodio, pulsa **"Descargar"**. La descarga inteligente por rangos HTTP asegura que nunca empiece de cero si se corta el WiFi.
+* **📂 Administrar contenidos:** Entra en la sección **"Descargas & PVR"** para reproducir o borrar tus archivos guardados.
 
 ---
 
-## 🎮 Paso 5: Cómo Usar el Mando a Distancia en la Tele
+## 💾 Paso 9: Copias de Seguridad Cifradas (AES-256)
 
-Si instalas la app en una Smart TV (Xiaomi, Fire TV Stick, Google TV, Sony, TCL, etc.):
+1. En el gestor de perfiles, entra en **"Copia de Seguridad"**.
+2. Para salvaguardar tus credenciales, introduce una contraseña opcional y el archivo `.json` se exportará cifrado con **AES-256 GCM**.
+3. Restaura tu copia de seguridad en cualquier otro televisor o dispositivo.
 
+---
+
+## 🎮 Mando de Smart TV y Atajos de Teclado
+
+### Mando a Distancia (10-Foot UI):
 | Botón del Mando | Función en la Aplicación |
 | :---: | :--- |
-| <kbd>▲</kbd> <kbd>▼</kbd> <kbd>◄</kbd> <kbd>►</kbd><br>*(Cruceta D-Pad)* | **Navegar:** Moverte entre menús, canales y películas. El elemento activo se ilumina en **cian brillante** y aumenta de tamaño. |
+| <kbd>▲</kbd> <kbd>▼</kbd> <kbd>◄</kbd> <kbd>►</kbd><br>*(Cruceta D-Pad)* | **Navegar:** Moverte entre menús, canales, cuadrícula Multiview y teclado de PIN. El elemento activo se ilumina en **cian brillante**. |
 | <kbd>OK</kbd> / <kbd>Enter</kbd> | **Seleccionar:** Abre el canal o reproduce el vídeo enfocado. |
-| <kbd>OK</kbd><br>*(Dentro del vídeo)* | **Controles:** Muestra u oculta la barra de tiempo y pausa/reanuda el vídeo. |
-| <kbd>◄</kbd> / <kbd>►</kbd><br>*(Dentro del vídeo)* | **Rebobinar / Avanzar:** Salta 10 segundos atrás o adelante en el vídeo. |
-| <kbd>▲</kbd> / <kbd>▼</kbd><br>*(Dentro del vídeo)* | **Volumen:** Sube o baja el nivel de sonido. |
+| <kbd>OK</kbd> *(Dentro del vídeo)* | **Controles:** Muestra u oculta la barra de tiempo y pausa/reanuda el vídeo. |
+| <kbd>◄</kbd> / <kbd>►</kbd> *(Dentro del vídeo)* | **Rebobinar / Avanzar:** Salta 10 segundos atrás o adelante en el vídeo. |
+| <kbd>▲</kbd> / <kbd>▼</kbd> *(Dentro del vídeo)* | **Volumen:** Sube o baja el nivel de sonido. |
 | <kbd>↩ Volver</kbd> / <kbd>Back</kbd> | **Atrás:** Sale del reproductor o vuelve a la pantalla previa. |
 
----
-
-## ⌨️ Atajos de Teclado Útiles (Ordenador / Mac / PC)
-
+### Atajos de Teclado Útiles (Mac & PC):
 | Tecla | Acción |
 | :---: | :--- |
 | <kbd>F</kbd> | Activar o salir del modo **Pantalla Completa** |
+| <kbd>I</kbd> | Activar o desactivar el **HUD de Estadísticas en Vivo** (bitrate, fps, códec, fotogramas perdidos) |
 | <kbd>Espacio</kbd> | **Pausar / Reanudar** la reproducción |
 | <kbd>M</kbd> | **Silenciar** o activar sonido (Mute) |
 | <kbd>Esc</kbd> | Cerrar reproductor / Salir de pantalla completa |

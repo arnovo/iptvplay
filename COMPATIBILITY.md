@@ -69,10 +69,13 @@ The television interface automatically listens and responds to direction pads an
 * 🌟 **Glow Effect:** Focused elements scale up by **105%** and illuminate with a vibrant cyan neon border (`#00E5FF`).
 * 📜 **Smooth Auto-Scroll:** While scrolling through long lists, the screen scrolls smoothly without jarring transitions.
 * ⌨️ **Standard Key Bindings:**
-  * <kbd>▲</kbd> / <kbd>▼</kbd> / <kbd>◄</kbd> / <kbd>►</kbd> : Move focus across grid or list items.
-  * <kbd>OK</kbd> / <kbd>Enter</kbd> / <kbd>Gamepad Button A</kbd> : Select and play.
+  * <kbd>▲</kbd> / <kbd>▼</kbd> / <kbd>◄</kbd> / <kbd>►</kbd> : Move focus across grid, list items, and Multiview audio tiles.
+  * <kbd>OK</kbd> / <kbd>Enter</kbd> / <kbd>Gamepad Button A</kbd> : Select, play, or activate virtual PIN numpad keys.
   * <kbd>Play</kbd> / <kbd>Pause</kbd> / <kbd>Space</kbd> : Direct player controls.
+  * <kbd>I</kbd> / <kbd>Info</kbd> : Toggle real-time Stream Statistics HUD overlay.
   * <kbd>Back</kbd> / <kbd>Esc</kbd> : Return to previous view.
+* 🎙️ **Voice Search:** Dedicated mic button in search bars with animated listening modal.
+* 🔢 **Virtual Numpad:** Custom on-screen 0-9 numpad for PIN-based Parental Controls on remotes lacking number pads.
 
 ---
 

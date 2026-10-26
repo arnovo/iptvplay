@@ -2,16 +2,23 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import '../models/catchup_item.dart';
 import '../models/playlist_profile.dart';
+import 'url_sanitizer_service.dart';
 
 class CatchupService {
-  final Dio _dio = Dio(
-    BaseOptions(
-      connectTimeout: const Duration(seconds: 15),
-      headers: {
-        'User-Agent': 'IPTVPlay/1.0.0 (Darwin; Apple Silicon)',
-      },
-    ),
-  );
+  final Dio _dio;
+
+  CatchupService({Dio? dio})
+      : _dio = dio ??
+            Dio(
+              BaseOptions(
+                connectTimeout: const Duration(seconds: 15),
+                headers: {
+                  'User-Agent': 'IPTVPlay/1.0.0 (Darwin; Apple Silicon)',
+                },
+              ),
+            ) {
+    _dio.interceptors.add(UrlSanitizerService.createSsrfInterceptor(allowInternalRelay: false));
+  }
 
   /// Fetch archived TV broadcasts from Xtream Codes
   Future<List<CatchupItem>> getXtreamCatchupPrograms({

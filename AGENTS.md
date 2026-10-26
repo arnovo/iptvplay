@@ -15,16 +15,20 @@ lib/
 ├── providers/    # Estado reactivo mediante ChangeNotifier (Provider).
 └── ui/           # Pantallas, widgets reutilizables y temas visuales.
 test/
-├── models_test.dart         # Pruebas unitarias de modelos de dominio.
-├── m3u_parser_test.dart      # Pruebas del analizador M3U / regex VOD y series.
-├── tv_focusable_test.dart    # Pruebas de widgets y navegación D-Pad en Smart TV.
-├── user_activity_test.dart   # Pruebas de comportamiento reactivo y persistencia.
-└── widget_test.dart          # Smoke test del arranque de la aplicación.
+├── models_test.dart            # Pruebas unitarias de modelos de dominio.
+├── m3u_parser_test.dart         # Pruebas del analizador M3U / regex VOD y series.
+├── tv_focusable_test.dart       # Pruebas de widgets y navegación D-Pad en Smart TV.
+├── user_activity_test.dart      # Pruebas de comportamiento reactivo y persistencia.
+├── security_service_test.dart   # Pruebas de sanitización de URLs y almacenamiento seguro.
+├── parental_service_test.dart   # Pruebas de control parental, filtrado adulto y PIN.
+├── reminder_service_test.dart   # Pruebas del programador de recordatorios EPG.
+├── backup_encryption_test.dart  # Pruebas de cifrado AES-256 de copias de seguridad.
+└── widget_test.dart             # Smoke test del arranque de la aplicación.
 ```
 
 ### Reglas de Dependencia entre Capas:
 1. **`models/`**: No deben importar paquetes de UI ni servicios. Son clases puras de Dart con métodos `copyWith`, `toMap` / `toJson` y constructores factory como `fromXtreamJson` o `fromMap`.
-2. **`services/`**: No deben importar `BuildContext` ni widgets de Flutter. Gestionan I/O en disco (`File`), red (`Dio`) o bases de datos locales (`SharedPreferences`).
+2. **`services/`**: No deben importar `BuildContext` ni widgets de Flutter. Gestionan I/O en disco (`File`), red (`Dio`), decodificación o almacenamiento seguro.
 3. **`providers/`**: Orquestan los servicios, exponen getters inmutables para el estado y llaman a `notifyListeners()` tras mutaciones.
 4. **`ui/`**: 
    - Usar `context.watch<T>()` únicamente en el método `build()` para suscribirse a cambios de estado.
@@ -42,12 +46,14 @@ test/
 
 ### 2. Soporte para Smart TV y Navegación con Mando (10-Foot UI)
 Toda la interfaz debe ser 100% operable desde un sofá con un mando a distancia estándar (D-Pad):
-- **Componente `TvFocusable`:** Cualquier elemento interactivo de las vistas principales (tarjetas de películas, episodios, canales, items de navegación lateral) debe estar envuelto en [TvFocusable](file:///Users/alejandrorodriguez/APPs/rea/iptvexp/lib/ui/widgets/tv_focusable.dart).
+- **Componente `TvFocusable`:** Cualquier elemento interactivo de las vistas principales (tarjetas de películas, episodios, canales, items de navegación lateral, botones del numpad de PIN) debe estar envuelto en [TvFocusable](file:///Users/alejandrorodriguez/APPs/rea/iptvexp/lib/ui/widgets/tv_focusable.dart).
 - **Resaltado de Foco:** Debe incluir escalado suave (`1.05x`), borde cian neón (`AppTheme.primary`) y resplandor luminoso (`AppTheme.primaryGlow`).
 - **Teclas de Mando:** Los escuchadores de eventos de teclado en el reproductor deben contemplar:
   - `LogicalKeyboardKey.select`, `enter`, `space`, `gameButtonA`.
   - Teclas multimedia: `mediaPlay`, `mediaPause`, `mediaPlayPause`, `mediaFastForward`, `mediaRewind`.
+  - Estadísticas de reproducción: tecla `I` / `info` para alternar el HUD en pantalla.
   - Navegación: `escape`, `goBack`, flechas direccionales.
+- **Multiview (4 Canales):** En pantallas múltiples, la navegación con D-Pad debe enrutar el foco de audio al cuadrante enfocado de manera inmediata.
 
 ### 3. Protocolo de Registro de Logs (`LogService`)
 Toda acción relevante del sistema debe quedar registrada en el servicio centralizado de logs mediante el singleton `LogService.instance`:

@@ -1,24 +1,32 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
+import '../../models/epg_reminder.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/catalog_provider.dart';
 import '../../providers/epg_provider.dart';
 import '../../providers/download_provider.dart';
 import '../../providers/log_provider.dart';
 import '../../providers/language_provider.dart';
+import '../../services/parental_service.dart';
+import '../../services/reminder_service.dart';
 import '../../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
+import 'home_hub_screen.dart';
 import 'live_tv_screen.dart';
 import 'vod_screen.dart';
 import 'series_screen.dart';
 import 'downloads_screen.dart';
 import 'logs_screen.dart';
 import 'profile_list_screen.dart';
+import 'player_screen.dart';
 import 'add_profile_dialog.dart';
 import '../widgets/backup_dialog.dart';
+import '../widgets/parental_dialog.dart';
+import '../widgets/pin_code_dialog.dart';
 import '../widgets/miniplayer_bar.dart';
 import '../widgets/tv_focusable.dart';
 
@@ -32,14 +40,78 @@ class HomeShellScreen extends StatefulWidget {
 class _HomeShellScreenState extends State<HomeShellScreen> {
   int _selectedIndex = 0;
   bool _isFullScreen = false;
+  StreamSubscription<EpgReminder>? _reminderSub;
 
   @override
   void initState() {
     super.initState();
     _checkFullScreen();
+    _reminderSub = ReminderService.instance.onReminderAlert.listen((reminder) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppTheme.surface,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: AppTheme.accentYellow, width: 1.5),
+          ),
+          content: Row(
+            children: [
+              const Icon(Icons.notifications_active, color: AppTheme.accentYellow),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      '¡Comienza tu programa!',
+                      style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.accentYellow, fontSize: 13),
+                    ),
+                    Text(
+                      '${reminder.programTitle} en ${reminder.channelName}',
+                      style: const TextStyle(color: AppTheme.textPrimary, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          action: SnackBarAction(
+            label: 'VER AHORA',
+            textColor: AppTheme.primary,
+            onPressed: () {
+              final catalog = context.read<CatalogProvider>();
+              final channel = catalog.content.channels.where((c) => c.id == reminder.channelId).firstOrNull;
+              if (channel != null) {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => PlayerScreen(
+                      streamUrl: channel.url,
+                      title: channel.name,
+                      isLive: true,
+                      contentId: channel.id,
+                      type: 'live',
+                    ),
+                  ),
+                );
+              }
+            },
+          ),
+          duration: const Duration(seconds: 10),
+        ),
+      );
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initData();
     });
+  }
+
+  @override
+  void dispose() {
+    _reminderSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _checkFullScreen() async {
@@ -218,7 +290,13 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 14),
                           child: TvFocusable(
                             borderRadius: BorderRadius.circular(10),
-                            onPressed: () {
+                            onPressed: () async {
+                              final parental = context.read<ParentalService>();
+                              if (parental.isSettingsRestricted()) {
+                                final ok = await PinCodeDialog.show(context, title: 'Ajustes Protegidos');
+                                if (!ok) return;
+                              }
+                              if (!context.mounted) return;
                               Navigator.of(context).push(
                                 MaterialPageRoute(builder: (_) => const ProfileListScreen()),
                               );
@@ -270,34 +348,40 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
 
                         // Navigation Tabs
                         _buildNavItem(
+                          icon: Icons.home_rounded,
+                          title: l10n.isEnglish ? 'Home' : 'Inicio',
+                          badge: '',
+                          index: 0,
+                        ),
+                        _buildNavItem(
                           icon: Icons.tv,
                           title: l10n.liveTv,
                           badge: '${catalogProvider.content.channels.length}',
-                          index: 0,
+                          index: 1,
                         ),
                         _buildNavItem(
                           icon: Icons.movie_outlined,
                           title: l10n.moviesVod,
                           badge: '${catalogProvider.content.vods.length}',
-                          index: 1,
+                          index: 2,
                         ),
                         _buildNavItem(
                           icon: Icons.video_library_outlined,
                           title: l10n.series,
                           badge: '${catalogProvider.content.series.length}',
-                          index: 2,
+                          index: 3,
                         ),
                         _buildNavItem(
                           icon: Icons.download_done,
                           title: l10n.downloadsPvr,
                           badge: '${context.watch<DownloadProvider>().items.length}',
-                          index: 3,
+                          index: 4,
                         ),
                         _buildNavItem(
                           icon: Icons.receipt_long,
                           title: l10n.logs,
                           badge: '${context.watch<LogProvider>().totalCount}',
-                          index: 4,
+                          index: 5,
                         ),
 
                         const Spacer(),
@@ -378,6 +462,84 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
                               );
                             },
                           ),
+                        ),
+
+                        // Control Parental
+                        Builder(
+                          builder: (context) {
+                            final parental = context.watch<ParentalService>();
+                            final isUnlocked = parental.isEnabled && parental.isSessionUnlocked;
+
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                              child: TvFocusable(
+                                borderRadius: BorderRadius.circular(8),
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (_) => const ParentalDialog(),
+                                  );
+                                },
+                                builder: (context, isFocused, isHovered) {
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      color: isFocused ? AppTheme.primary.withValues(alpha: 0.1) : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: ListTile(
+                                      dense: true,
+                                      leading: Icon(
+                                        parental.isEnabled
+                                            ? (isUnlocked ? Icons.lock_open_rounded : Icons.lock_rounded)
+                                            : Icons.shield_outlined,
+                                        color: parental.isEnabled
+                                            ? (isUnlocked ? AppTheme.accentGreen : AppTheme.accentYellow)
+                                            : AppTheme.textSecondary,
+                                        size: 20,
+                                      ),
+                                      title: Text(
+                                        'Control Parental',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: parental.isEnabled
+                                              ? (isUnlocked ? AppTheme.accentGreen : AppTheme.accentYellow)
+                                              : AppTheme.textSecondary,
+                                          fontWeight: parental.isEnabled ? FontWeight.bold : FontWeight.normal,
+                                        ),
+                                      ),
+                                      trailing: parental.isEnabled
+                                          ? Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: (isUnlocked ? AppTheme.accentGreen : AppTheme.accentYellow).withValues(alpha: 0.2),
+                                                borderRadius: BorderRadius.circular(4),
+                                                border: Border.all(
+                                                  color: isUnlocked ? AppTheme.accentGreen : AppTheme.accentYellow,
+                                                  width: 0.8,
+                                                ),
+                                              ),
+                                              child: Text(
+                                                isUnlocked ? 'ABIERTO' : 'PIN',
+                                                style: TextStyle(
+                                                  fontSize: 8,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: isUnlocked ? AppTheme.accentGreen : AppTheme.accentYellow,
+                                                ),
+                                              ),
+                                            )
+                                          : null,
+                                      onTap: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (_) => const ParentalDialog(),
+                                        );
+                                      },
+                                    ),
+                                  );
+                                },
+                              ),
+                            );
+                          },
                         ),
 
                         if (activeProfile != null)
@@ -560,10 +722,10 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
   Widget _buildBody(dynamic activeProfile, CatalogProvider catalogProvider) {
     final l10n = context.l10n;
 
-    if (_selectedIndex == 3) {
+    if (_selectedIndex == 4) {
       return const DownloadsScreen();
     }
-    if (_selectedIndex == 4) {
+    if (_selectedIndex == 5) {
       return const LogsScreen();
     }
 
@@ -664,17 +826,27 @@ class _HomeShellScreenState extends State<HomeShellScreen> {
 
     switch (_selectedIndex) {
       case 0:
-        return const LiveTvScreen();
+        return HomeHubScreen(
+          onNavigateToLive: () => setState(() => _selectedIndex = 1),
+          onNavigateToVod: () => setState(() => _selectedIndex = 2),
+          onNavigateToSeries: () => setState(() => _selectedIndex = 3),
+        );
       case 1:
-        return const VodScreen();
+        return const LiveTvScreen();
       case 2:
-        return const SeriesScreen();
+        return const VodScreen();
       case 3:
-        return const DownloadsScreen();
+        return const SeriesScreen();
       case 4:
+        return const DownloadsScreen();
+      case 5:
         return const LogsScreen();
       default:
-        return const LiveTvScreen();
+        return HomeHubScreen(
+          onNavigateToLive: () => setState(() => _selectedIndex = 1),
+          onNavigateToVod: () => setState(() => _selectedIndex = 2),
+          onNavigateToSeries: () => setState(() => _selectedIndex = 3),
+        );
     }
   }
 }

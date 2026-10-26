@@ -4,6 +4,7 @@ import '../models/category.dart';
 import '../models/channel.dart';
 import '../models/vod_item.dart';
 import '../models/series_item.dart';
+import 'url_sanitizer_service.dart';
 
 class M3uParseResult {
   final List<Channel> channels;
@@ -24,19 +25,26 @@ class M3uParseResult {
 }
 
 class M3uParserService {
-  final Dio _dio = Dio(
-    BaseOptions(
-      connectTimeout: const Duration(seconds: 20),
-      receiveTimeout: const Duration(seconds: 40),
-      headers: {
-        'User-Agent': 'IPTVSmartersPro/3.1.5.1 (Linux; Android 12) AppleWebKit/537.36',
-      },
-    ),
-  );
+  final Dio _dio;
+
+  M3uParserService({Dio? dio})
+      : _dio = dio ??
+            Dio(
+              BaseOptions(
+                connectTimeout: const Duration(seconds: 20),
+                receiveTimeout: const Duration(seconds: 40),
+                headers: {
+                  'User-Agent': 'IPTVSmartersPro/3.1.5.1 (Linux; Android 12) AppleWebKit/537.36',
+                },
+              ),
+            ) {
+    _dio.interceptors.add(UrlSanitizerService.createSsrfInterceptor(allowInternalRelay: false));
+  }
 
   Future<M3uParseResult> downloadAndParse(String m3uUrl) async {
+    final sanitized = UrlSanitizerService.sanitizeUrl(m3uUrl);
     final response = await _dio.get<String>(
-      m3uUrl,
+      sanitized,
       options: Options(responseType: ResponseType.plain),
     );
 

@@ -69,10 +69,13 @@ La interfaz de televisión responde automáticamente a la cruceta y botones mult
 * 🌟 **Realce visual (Glow Effect):** El elemento seleccionado aumenta de tamaño un **105%** y se ilumina con un borde cian neón (`#00E5FF`).
 * 📜 **Autodesplazamiento:** Al desplazarte por listas largas, la pantalla hace scroll automático suave sin saltos bruscos.
 * ⌨️ **Mapeo de teclas estándar:**
-  * <kbd>▲</kbd> / <kbd>▼</kbd> / <kbd>◄</kbd> / <kbd>►</kbd> : Mover foco en la cuadrícula o lista.
-  * <kbd>OK</kbd> / <kbd>Enter</kbd> / <kbd>Botón A</kbd> : Selección y reproducción.
+  * <kbd>▲</kbd> / <kbd>▼</kbd> / <kbd>◄</kbd> / <kbd>►</kbd> : Mover foco en la cuadrícula, listas o ventanas de audio de Multiview.
+  * <kbd>OK</kbd> / <kbd>Enter</kbd> / <kbd>Botón A</kbd> : Selección, reproducción o pulsar teclas del teclado numérico virtual.
   * <kbd>Play</kbd> / <kbd>Pause</kbd> / <kbd>Espacio</kbd> : Control directo del reproductor.
+  * <kbd>I</kbd> / <kbd>Info</kbd> : Activar o desactivar el HUD de estadísticas de red y vídeo en tiempo real.
   * <kbd>Atrás</kbd> / <kbd>Esc</kbd> : Regresar al menú anterior.
+* 🎙️ **Búsqueda por Voz:** Botón de micrófono dedicado en las barras de búsqueda con modal animado de escucha.
+* 🔢 **Teclado Numérico Virtual en Pantalla:** Marcación de PIN para Control Parental con cruceta para mandos sin botones numéricos físicos.
 
 ---
 

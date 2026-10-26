@@ -28,6 +28,8 @@ class PlaybackProgress {
     return (positionSeconds / durationSeconds).clamp(0.0, 1.0);
   }
 
+  int get remainingSeconds => (durationSeconds - positionSeconds).clamp(0, durationSeconds);
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,

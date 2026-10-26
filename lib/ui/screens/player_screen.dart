@@ -13,7 +13,11 @@ import '../../providers/stream_server_provider.dart';
 import '../../providers/playback_provider.dart';
 import '../../models/app_log.dart';
 import '../../services/log_service.dart';
+import '../../models/channel.dart';
 import '../widgets/lan_stream_dialog.dart';
+import '../widgets/stream_stats_overlay.dart';
+import '../widgets/subtitles_dialog.dart';
+import 'multiview_screen.dart';
 import '../../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 
@@ -404,58 +408,58 @@ class _PlayerScreenState extends State<PlayerScreen> {
     switch (lower) {
       case 'spa':
       case 'es':
-        return 'Español';
+        return '🇪🇸 Español';
       case 'eng':
       case 'en':
-        return 'Inglés';
+        return '🇬🇧 Inglés';
       case 'fre':
       case 'fra':
       case 'fr':
-        return 'Francés';
+        return '🇫🇷 Francés';
       case 'ger':
       case 'deu':
       case 'de':
-        return 'Alemán';
+        return '🇩🇪 Alemán';
       case 'ita':
       case 'it':
-        return 'Italiano';
+        return '🇮🇹 Italiano';
       case 'por':
       case 'pt':
-        return 'Portugués';
+        return '🇵🇹 Portugués';
       case 'ara':
       case 'ar':
-        return 'Árabe';
+        return '🇸🇦 Árabe';
       case 'rus':
       case 'ru':
-        return 'Ruso';
+        return '🇷🇺 Ruso';
       case 'jpn':
       case 'ja':
-        return 'Japonés';
+        return '🇯🇵 Japonés';
       case 'chi':
       case 'zho':
       case 'zh':
-        return 'Chino';
+        return '🇨🇳 Chino';
       case 'dut':
       case 'nld':
       case 'nl':
-        return 'Holandés';
+        return '🇳🇱 Holandés';
       case 'pol':
       case 'pl':
-        return 'Polaco';
+        return '🇵🇱 Polaco';
       case 'dan':
       case 'da':
-        return 'Danés';
+        return '🇩🇰 Danés';
       case 'swe':
       case 'sv':
-        return 'Sueco';
+        return '🇸🇪 Sueco';
       case 'nor':
       case 'no':
-        return 'Noruego';
+        return '🇳🇴 Noruego';
       case 'fin':
       case 'fi':
-        return 'Finlandés';
+        return '🇫🇮 Finlandés';
       default:
-        return code.toUpperCase();
+        return '🌐 ${code.toUpperCase()}';
     }
   }
 
@@ -522,21 +526,57 @@ class _PlayerScreenState extends State<PlayerScreen> {
                         final track = tracks[index];
                         final isSelected = current == track;
                         final langName = _formatLanguageCode(track.language, 'Pista ${track.id}');
-                        final label = track.title?.isNotEmpty == true
-                            ? '${track.title!} ($langName)'
-                            : langName;
+                        final rawTitle = track.title ?? '';
+                        final label = rawTitle.isNotEmpty ? '$rawTitle ($langName)' : langName;
+
+                        String? audioBadge;
+                        final lowerTitle = rawTitle.toLowerCase();
+                        if (lowerTitle.contains('atmos')) {
+                          audioBadge = 'DOLBY ATMOS';
+                        } else if (lowerTitle.contains('5.1') || lowerTitle.contains('surround')) {
+                          audioBadge = '5.1 SURROUND';
+                        } else if (lowerTitle.contains('7.1')) {
+                          audioBadge = '7.1 SURROUND';
+                        } else if (lowerTitle.contains('ac3') || lowerTitle.contains('eac3') || lowerTitle.contains('dolby')) {
+                          audioBadge = 'DOLBY DIGITAL';
+                        } else if (lowerTitle.contains('dts')) {
+                          audioBadge = 'DTS';
+                        }
 
                         return Material(
                           color: Colors.transparent,
                           child: ListTile(
                             dense: true,
                             contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                            title: Text(
-                              label,
-                              style: TextStyle(
-                                color: isSelected ? AppTheme.primary : AppTheme.textPrimary,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              ),
+                            title: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    label,
+                                    style: TextStyle(
+                                      color: isSelected ? AppTheme.primary : AppTheme.textPrimary,
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                    ),
+                                  ),
+                                ),
+                                if (audioBadge != null)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.primary.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(color: AppTheme.primary.withValues(alpha: 0.4)),
+                                    ),
+                                    child: Text(
+                                      audioBadge,
+                                      style: const TextStyle(
+                                        color: AppTheme.primary,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
                             trailing: isSelected ? const Icon(Icons.check, color: AppTheme.primary) : null,
                             onTap: () {
@@ -557,119 +597,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   void _showSubtitleTracksDialog() {
-    final l10n = context.l10n;
-    final tracks = _player.state.tracks.subtitle;
-    final current = _player.state.track.subtitle;
-
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      backgroundColor: AppTheme.surface,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      builder: (_) => SubtitlesDialog(
+        player: _player,
+        contentTitle: _title,
       ),
-      builder: (ctx) {
-        return ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.7,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.subtitles, color: AppTheme.primary),
-                    const SizedBox(width: 10),
-                    Text(
-                      l10n.subtitles,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primary.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        l10n.languagesAvailableCount(tracks.length),
-                        style: const TextStyle(color: AppTheme.primary, fontSize: 11, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Material(
-                  color: Colors.transparent,
-                  child: ListTile(
-                    dense: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                    title: Text(
-                      l10n.subtitlesDisabled,
-                      style: TextStyle(
-                        color: current == SubtitleTrack.no() ? AppTheme.primary : AppTheme.textPrimary,
-                        fontWeight: current == SubtitleTrack.no() ? FontWeight.bold : FontWeight.normal,
-                      ),
-                    ),
-                    trailing: current == SubtitleTrack.no() ? const Icon(Icons.check, color: AppTheme.primary) : null,
-                    onTap: () {
-                      _player.setSubtitleTrack(SubtitleTrack.no());
-                      Navigator.of(ctx).pop();
-                    },
-                  ),
-                ),
-                const Divider(color: AppTheme.border, height: 1),
-                if (tracks.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    child: Center(
-                      child: Text(l10n.noSubtitlesAvailable, style: const TextStyle(color: AppTheme.textMuted)),
-                    ),
-                  )
-                else
-                  Flexible(
-                    child: ListView.separated(
-                      shrinkWrap: true,
-                      itemCount: tracks.length,
-                      separatorBuilder: (_, _) => const Divider(color: AppTheme.border, height: 1),
-                      itemBuilder: (context, index) {
-                        final track = tracks[index];
-                        final isSelected = current == track;
-                        final langName = _formatLanguageCode(track.language, 'Subtítulo ${track.id}');
-                        final label = track.title?.isNotEmpty == true
-                            ? '${track.title!} ($langName)'
-                            : langName;
-
-                        return Material(
-                          color: Colors.transparent,
-                          child: ListTile(
-                            dense: true,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                            title: Text(
-                              label,
-                              style: TextStyle(
-                                color: isSelected ? AppTheme.primary : AppTheme.textPrimary,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              ),
-                            ),
-                            trailing: isSelected ? const Icon(Icons.check, color: AppTheme.primary) : null,
-                            onTap: () {
-                              _player.setSubtitleTrack(track);
-                              Navigator.of(ctx).pop();
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -793,6 +726,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
               return KeyEventResult.handled;
             } else if (event.logicalKey == LogicalKeyboardKey.keyM) {
               _toggleMute();
+              return KeyEventResult.handled;
+            } else if (event.logicalKey == LogicalKeyboardKey.keyI ||
+                event.logicalKey == LogicalKeyboardKey.info) {
+              context.read<PlaybackProvider>().toggleStats();
               return KeyEventResult.handled;
             } else if (event.logicalKey == LogicalKeyboardKey.arrowRight ||
                 event.logicalKey == LogicalKeyboardKey.mediaFastForward) {
@@ -970,6 +907,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   child: _buildControlsOverlay(),
                 ),
               ),
+
+              // Technical Stream Statistics Overlay (HUD / OSD)
+              const StreamStatsOverlay(),
             ],
           ),
         ),
@@ -1122,6 +1062,26 @@ class _PlayerScreenState extends State<PlayerScreen> {
                         );
                       },
                     ),
+                  // Multiview Button for Live Streams
+                  if (_isLive)
+                    IconButton(
+                      icon: const Icon(Icons.dashboard_customize, color: Colors.white, size: 20),
+                      tooltip: 'Abrir en Multiview',
+                      onPressed: () {
+                        final currentChannel = Channel(
+                          id: _contentId ?? 'curr',
+                          name: _title,
+                          url: _streamUrl,
+                          logoUrl: _posterUrl,
+                          categoryId: 'live',
+                        );
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => MultiviewScreen(initialChannel: currentChannel),
+                          ),
+                        );
+                      },
+                    ),
                   // VOD Offline Download Button
                   if (!_isLive && _contentId != null)
                     Consumer<DownloadProvider>(
@@ -1179,6 +1139,19 @@ class _PlayerScreenState extends State<PlayerScreen> {
                           _startControlsTimer();
                         },
                       );
+                    },
+                  ),
+                  // Stream Stats HUD Button
+                  IconButton(
+                    icon: Icon(
+                      Icons.analytics_outlined,
+                      color: context.watch<PlaybackProvider>().showStats ? AppTheme.primary : Colors.white,
+                      size: 22,
+                    ),
+                    tooltip: 'Estadísticas del stream (I)',
+                    onPressed: () {
+                      context.read<PlaybackProvider>().toggleStats();
+                      _startControlsTimer();
                     },
                   ),
                   // Fullscreen Button

@@ -15,16 +15,20 @@ lib/
 ├── providers/    # Reactive state management via ChangeNotifier (Provider).
 └── ui/           # Screens, reusable widgets, and visual themes.
 test/
-├── models_test.dart         # Unit tests for domain models.
-├── m3u_parser_test.dart      # Unit tests for M3U parsing / VOD & series regex.
-├── tv_focusable_test.dart    # Widget & Smart TV D-Pad navigation tests.
-├── user_activity_test.dart   # Behavioral tests for reactive state and persistence.
-└── widget_test.dart          # Application startup smoke test.
+├── models_test.dart            # Unit tests for domain models.
+├── m3u_parser_test.dart         # Unit tests for M3U parsing / VOD & series regex.
+├── tv_focusable_test.dart       # Widget & Smart TV D-Pad navigation tests.
+├── user_activity_test.dart      # Behavioral tests for reactive state and persistence.
+├── security_service_test.dart   # Tests for URL sanitization and secure hardware storage.
+├── parental_service_test.dart   # Tests for parental control, adult filter, and PIN hashing.
+├── reminder_service_test.dart   # Tests for EPG broadcast reminders scheduler.
+├── backup_encryption_test.dart  # Tests for AES-256 JSON backup encryption.
+└── widget_test.dart             # Application startup smoke test.
 ```
 
 ### Layer Dependency Rules:
 1. **`models/`**: Must not import UI packages or services. They are pure Dart classes with `copyWith`, `toMap` / `toJson` methods and factory constructors such as `fromXtreamJson` or `fromMap`.
-2. **`services/`**: Must not import `BuildContext` or Flutter widgets. They manage disk I/O (`File`), network (`Dio`), or local storage (`SharedPreferences`).
+2. **`services/`**: Must not import `BuildContext` or Flutter widgets. They manage disk I/O (`File`), network (`Dio`), decoders, or secure storage.
 3. **`providers/`**: Orchestrate services, expose immutable getters for state, and call `notifyListeners()` after mutations.
 4. **`ui/`**: 
    - Use `context.watch<T>()` strictly inside `build()` methods to subscribe to state changes.
@@ -42,12 +46,14 @@ test/
 
 ### 2. Smart TV Support and Remote Navigation (10-Foot UI)
 The entire interface must be 100% operable from a couch using a standard remote control (D-Pad):
-- **Component `TvFocusable`:** Any interactive element across the main views (movie cards, episodes, channels, sidebar items) must be wrapped in `TvFocusable`.
+- **Component `TvFocusable`:** Any interactive element across the main views (movie cards, episodes, channels, sidebar items, virtual PIN numpad keys) must be wrapped in `TvFocusable`.
 - **Focus Highlight:** Must feature smooth scaling (`1.05x`), a cyan neon border (`AppTheme.primary`), and a luminous glow (`AppTheme.primaryGlow`).
 - **Remote Keys:** Keyboard event listeners in the player must handle:
   - `LogicalKeyboardKey.select`, `enter`, `space`, `gameButtonA`.
   - Media keys: `mediaPlay`, `mediaPause`, `mediaPlayPause`, `mediaFastForward`, `mediaRewind`.
+  - Stream diagnostics: key `I` / `info` to toggle the on-screen stats HUD.
   - Navigation: `escape`, `goBack`, directional arrows.
+- **Multiview (4 Channels):** On split-screens, D-Pad navigation must immediately route audio focus to the focused quadrant without interrupting neighboring visual streams.
 
 ### 3. Centralized Logging Protocol (`LogService`)
 Every significant system event must be recorded in the centralized log service via the `LogService.instance` singleton:

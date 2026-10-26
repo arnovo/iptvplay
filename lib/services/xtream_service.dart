@@ -3,24 +3,31 @@ import '../models/category.dart';
 import '../models/channel.dart';
 import '../models/vod_item.dart';
 import '../models/series_item.dart';
+import 'url_sanitizer_service.dart';
 
 class XtreamService {
-  final Dio _dio = Dio(
-    BaseOptions(
-      connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 30),
-      headers: {
-        'User-Agent': 'IPTVSmartersPro/3.1.5.1 (Linux; Android 12) AppleWebKit/537.36',
-      },
-    ),
-  );
+  final Dio _dio;
+
+  XtreamService({Dio? dio})
+      : _dio = dio ??
+            Dio(
+              BaseOptions(
+                connectTimeout: const Duration(seconds: 15),
+                receiveTimeout: const Duration(seconds: 30),
+                headers: {
+                  'User-Agent': 'IPTVSmartersPro/3.1.5.1 (Linux; Android 12) AppleWebKit/537.36',
+                },
+              ),
+            ) {
+    _dio.interceptors.add(UrlSanitizerService.createSsrfInterceptor(allowInternalRelay: false));
+  }
 
   String _cleanServerUrl(String url) {
     var cleaned = url.trim();
     if (!cleaned.startsWith('http://') && !cleaned.startsWith('https://')) {
       cleaned = 'http://$cleaned';
     }
-    return cleaned.replaceAll(RegExp(r'/+$'), '');
+    return UrlSanitizerService.sanitizeUrl(cleaned.replaceAll(RegExp(r'/+$'), ''));
   }
 
   Future<bool> testAuthentication(String serverUrl, String username, String password) async {

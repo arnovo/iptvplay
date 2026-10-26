@@ -49,6 +49,9 @@ dependencies:
   xml: ^7.1.0
   intl: ^0.20.3
   file_picker: ^13.2.0
+  flutter_secure_storage: ^11.2.0
+  crypto: ^3.0.7
+  encrypt: ^5.0.3
 
 dev_dependencies:
   flutter_test:

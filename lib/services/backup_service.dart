@@ -1,5 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:crypto/crypto.dart';
+import 'package:encrypt/encrypt.dart' as enc;
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/playlist_profile.dart';
@@ -64,6 +67,47 @@ class BackupService {
   final StorageService _storageService = StorageService();
   final UserActivityService _activityService = UserActivityService();
 
+  /// Comprueba si un JSON corresponde a una copia de seguridad cifrada
+  static bool isEncryptedBackup(String jsonString) {
+    try {
+      final decoded = jsonDecode(jsonString);
+      return decoded is Map<String, dynamic> && decoded['encrypted'] == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Cifra un contenido JSON mediante AES-256 derivado de la contraseña
+  static String encryptJson(String jsonString, String password) {
+    final keyBytes = sha256.convert(utf8.encode(password)).bytes;
+    final key = enc.Key(Uint8List.fromList(keyBytes));
+    final iv = enc.IV.fromSecureRandom(16);
+    final encrypter = enc.Encrypter(enc.AES(key));
+    final encrypted = encrypter.encrypt(jsonString, iv: iv);
+
+    return jsonEncode({
+      'app': 'IPTV Play',
+      'encrypted': true,
+      'version': 2,
+      'cipher': 'AES-256-CBC',
+      'iv': iv.base64,
+      'payload': encrypted.base64,
+    });
+  }
+
+  /// Descifra un contenido JSON cifrado con la contraseña correspondiente
+  static String decryptJson(String encryptedJsonString, String password) {
+    final Map<String, dynamic> map = jsonDecode(encryptedJsonString);
+    if (map['encrypted'] != true) {
+      return encryptedJsonString;
+    }
+    final keyBytes = sha256.convert(utf8.encode(password)).bytes;
+    final key = enc.Key(Uint8List.fromList(keyBytes));
+    final iv = enc.IV.fromBase64(map['iv'] as String);
+    final encrypter = enc.Encrypter(enc.AES(key));
+    return encrypter.decrypt64(map['payload'] as String, iv: iv);
+  }
+
   /// Create backup data structure from current local storage
   Future<BackupData> createBackupData() async {
     final profiles = await _storageService.getProfiles();
@@ -86,14 +130,19 @@ class BackupService {
     );
   }
 
-  /// Export backup to a file chosen by the user
-  Future<String?> exportBackupToFile() async {
+  /// Export backup to a file chosen by the user (opcionalmente cifrado con contraseña)
+  Future<String?> exportBackupToFile({String? password}) async {
     final backup = await createBackupData();
-    final jsonString = const JsonEncoder.withIndent('  ').convert(backup.toJson());
+    var jsonString = const JsonEncoder.withIndent('  ').convert(backup.toJson());
+
+    if (password != null && password.trim().isNotEmpty) {
+      jsonString = encryptJson(jsonString, password.trim());
+    }
 
     String twoDigits(int n) => n.toString().padLeft(2, '0');
     final now = DateTime.now();
-    final filename = 'iptv_backup_${now.year}${twoDigits(now.month)}${twoDigits(now.day)}_${twoDigits(now.hour)}${twoDigits(now.minute)}.json';
+    final ext = (password != null && password.trim().isNotEmpty) ? 'enc.json' : 'json';
+    final filename = 'iptv_backup_${now.year}${twoDigits(now.month)}${twoDigits(now.day)}_${twoDigits(now.hour)}${twoDigits(now.minute)}.$ext';
 
     try {
       final uri = await FilePicker.saveFile(
@@ -117,8 +166,8 @@ class BackupService {
     return null;
   }
 
-  /// Import backup file selected by the user
-  Future<bool> importBackupFromFile() async {
+  /// Import backup file selected by the user (soporta descifrado)
+  Future<bool> importBackupFromFile({String? password}) async {
     try {
       final result = await FilePicker.pickFiles(
         dialogTitle: 'Seleccionar copia de seguridad',
@@ -131,7 +180,15 @@ class BackupService {
       }
 
       final file = File(result.first.path!);
-      final content = await file.readAsString();
+      var content = await file.readAsString();
+
+      if (isEncryptedBackup(content)) {
+        if (password == null || password.isEmpty) {
+          throw Exception('Esta copia de seguridad está cifrada y requiere contraseña.');
+        }
+        content = decryptJson(content, password);
+      }
+
       return await restoreBackupFromJson(content);
     } catch (_) {
       return false;

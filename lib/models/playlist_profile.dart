@@ -33,6 +33,30 @@ class PlaylistProfile {
     this.lastUpdated,
   });
 
+  PlaylistProfile copyWith({
+    String? id,
+    String? name,
+    PlaylistType? type,
+    String? m3uUrl,
+    String? serverUrl,
+    String? username,
+    String? password,
+    DateTime? createdAt,
+    DateTime? lastUpdated,
+  }) {
+    return PlaylistProfile(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      type: type ?? this.type,
+      m3uUrl: m3uUrl ?? this.m3uUrl,
+      serverUrl: serverUrl ?? this.serverUrl,
+      username: username ?? this.username,
+      password: password ?? this.password,
+      createdAt: createdAt ?? this.createdAt,
+      lastUpdated: lastUpdated ?? this.lastUpdated,
+    );
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,

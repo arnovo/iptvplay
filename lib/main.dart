@@ -13,6 +13,9 @@ import 'providers/download_provider.dart';
 import 'providers/stream_server_provider.dart';
 import 'providers/log_provider.dart';
 import 'providers/playback_provider.dart';
+import 'providers/multiview_provider.dart';
+import 'services/parental_service.dart';
+import 'services/reminder_service.dart';
 import 'providers/language_provider.dart';
 import 'l10n/app_localizations.dart';
 import 'ui/theme/app_theme.dart';
@@ -38,6 +41,9 @@ void main() async {
         ChangeNotifierProvider(create: (_) => StreamServerProvider()),
         ChangeNotifierProvider(create: (_) => LogProvider()),
         ChangeNotifierProvider(create: (_) => PlaybackProvider()),
+        ChangeNotifierProvider(create: (_) => MultiviewProvider()),
+        ChangeNotifierProvider.value(value: ParentalService.instance..init()),
+        ChangeNotifierProvider.value(value: ReminderService.instance..init()),
       ],
       child: const IptvApp(),
     ),

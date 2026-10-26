@@ -4,18 +4,25 @@ import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:xml/xml.dart';
 import '../models/epg_program.dart';
+import 'url_sanitizer_service.dart';
 
 class EpgService {
-  final Dio _dio = Dio(
-    BaseOptions(
-      connectTimeout: const Duration(seconds: 20),
-      receiveTimeout: const Duration(seconds: 40),
-      headers: {
-        'User-Agent': 'IPTVPlay/1.0.0 (Darwin; Apple Silicon)',
-      },
-      responseType: ResponseType.bytes,
-    ),
-  );
+  final Dio _dio;
+
+  EpgService({Dio? dio})
+      : _dio = dio ??
+            Dio(
+              BaseOptions(
+                connectTimeout: const Duration(seconds: 20),
+                receiveTimeout: const Duration(seconds: 40),
+                headers: {
+                  'User-Agent': 'IPTVPlay/1.0.0 (Darwin; Apple Silicon)',
+                },
+                responseType: ResponseType.bytes,
+              ),
+            ) {
+    _dio.interceptors.add(UrlSanitizerService.createSsrfInterceptor(allowInternalRelay: false));
+  }
 
   /// Parse XMLTV timestamp: "20261025220000 +0100" or "20261025220000"
   DateTime? parseXmltvDate(String dateStr) {
@@ -133,7 +140,7 @@ class EpgService {
       final cleanServer = serverUrl.endsWith('/') ? serverUrl.substring(0, serverUrl.length - 1) : serverUrl;
       final apiUrl = '$cleanServer/player_api.php?username=$username&password=$password&action=get_short_epg&stream_id=$streamId&limit=10';
 
-      final resp = await Dio().get(apiUrl);
+      final resp = await _dio.get(apiUrl, options: Options(responseType: ResponseType.json));
       if (resp.data != null && resp.data is Map && resp.data['epg_listings'] != null) {
         final listings = resp.data['epg_listings'] as List;
         final List<EpgProgram> result = [];

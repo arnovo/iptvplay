@@ -14,7 +14,11 @@ import '../widgets/channel_epg_dialog.dart';
 import '../widgets/catchup_dialog.dart';
 import '../widgets/sort_filter_button.dart';
 import '../widgets/tv_focusable.dart';
+import '../../services/parental_service.dart';
 import 'player_screen.dart';
+import 'multiview_screen.dart';
+import 'epg_grid_screen.dart';
+import '../widgets/voice_search_dialog.dart';
 
 class LiveTvScreen extends StatelessWidget {
   const LiveTvScreen({super.key});
@@ -26,9 +30,19 @@ class LiveTvScreen extends StatelessWidget {
     final epg = context.watch<EpgProvider>();
     final profileProvider = context.watch<ProfileProvider>();
     final downloadProvider = context.watch<DownloadProvider>();
+    final parental = context.watch<ParentalService>();
     final activeProfile = profileProvider.activeProfile;
     final selectedCategory = catalog.selectedLiveCategoryId;
     final l10n = context.l10n;
+
+    final restrictedCategoryIds = <String>{};
+    final categories = catalog.content.liveCategories.where((c) {
+      if (parental.isCategoryRestricted(categoryId: c.id, categoryName: c.name)) {
+        restrictedCategoryIds.add(c.id);
+        return false;
+      }
+      return true;
+    }).toList();
 
     List<Channel> channels;
     if (selectedCategory == '__fav__') {
@@ -44,7 +58,9 @@ class LiveTvScreen extends StatelessWidget {
       channels = catalog.filteredChannels;
     }
 
-    final categories = catalog.content.liveCategories;
+    if (restrictedCategoryIds.isNotEmpty) {
+      channels = channels.where((c) => !restrictedCategoryIds.contains(c.categoryId)).toList();
+    }
 
     return Row(
       children: [
@@ -86,6 +102,20 @@ class LiveTvScreen extends StatelessWidget {
                         decoration: InputDecoration(
                           hintText: l10n.searchChannels,
                           prefixIcon: const Icon(Icons.search, color: AppTheme.textMuted),
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.mic, color: AppTheme.primary, size: 20),
+                            tooltip: 'Búsqueda por Voz en Smart TV',
+                            onPressed: () async {
+                              final query = await VoiceSearchDialog.show(
+                                context,
+                                currentQuery: catalog.liveSearchQuery,
+                                title: 'Buscar Canales por Voz',
+                              );
+                              if (query != null) {
+                                catalog.setLiveSearch(query);
+                              }
+                            },
+                          ),
                           isDense: true,
                         ),
                       ),
@@ -99,6 +129,61 @@ class LiveTvScreen extends StatelessWidget {
                         SortOption.nameDesc,
                       ],
                       onSelected: (opt) => catalog.setLiveSort(opt),
+                    ),
+                    const SizedBox(width: 8),
+                    // Botón Guía EPG en Cuadrícula
+                    TvFocusable(
+                      borderRadius: BorderRadius.circular(8),
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const EpgGridScreen()),
+                        );
+                      },
+                      builder: (context, isFocused, isHovered) {
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: isFocused ? AppTheme.primary.withValues(alpha: 0.2) : AppTheme.surfaceLight,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: isFocused ? AppTheme.primary : AppTheme.border),
+                          ),
+                          child: IconButton(
+                            icon: const Icon(Icons.grid_on_rounded, color: AppTheme.primary, size: 20),
+                            tooltip: 'Guía de Programación en Cuadrícula (EPG)',
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(builder: (_) => const EpgGridScreen()),
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    TvFocusable(
+                      borderRadius: BorderRadius.circular(8),
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const MultiviewScreen()),
+                        );
+                      },
+                      builder: (context, isFocused, isHovered) {
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: isFocused ? AppTheme.primary.withValues(alpha: 0.2) : AppTheme.surfaceLight,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: isFocused ? AppTheme.primary : AppTheme.border),
+                          ),
+                          child: IconButton(
+                            icon: const Icon(Icons.dashboard_customize, color: AppTheme.primary, size: 20),
+                            tooltip: 'Pantalla Dividida (Multiview 4 Canales)',
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(builder: (_) => const MultiviewScreen()),
+                              );
+                            },
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(width: 12),
                     if (selectedCategory == '__recents__' && channels.isNotEmpty) ...[

@@ -8,18 +8,25 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/download_item.dart';
 import '../models/app_log.dart';
 import 'log_service.dart';
+import 'url_sanitizer_service.dart';
 
 class DownloadService {
   static const String prefDownloadDirKey = 'pref_download_directory';
 
-  final Dio _dio = Dio(
-    BaseOptions(
-      connectTimeout: const Duration(seconds: 15),
-      headers: {
-        'User-Agent': 'IPTVPlay/1.0.0 (Darwin; Apple Silicon)',
-      },
-    ),
-  );
+  final Dio _dio;
+
+  DownloadService({Dio? dio})
+      : _dio = dio ??
+            Dio(
+              BaseOptions(
+                connectTimeout: const Duration(seconds: 15),
+                headers: {
+                  'User-Agent': 'IPTVPlay/1.0.0 (Darwin; Apple Silicon)',
+                },
+              ),
+            ) {
+    _dio.interceptors.add(UrlSanitizerService.createSsrfInterceptor(allowInternalRelay: false));
+  }
 
   final Map<String, CancelToken> _activeTokens = {};
   final Map<String, IOSink> _activeSinks = {};

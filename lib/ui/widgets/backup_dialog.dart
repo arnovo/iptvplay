@@ -16,9 +16,17 @@ class BackupDialog extends StatefulWidget {
 
 class _BackupDialogState extends State<BackupDialog> {
   final BackupService _backupService = BackupService();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _obscurePassword = true;
   bool _isProcessing = false;
   String? _statusMessage;
   bool _isSuccess = true;
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   Future<void> _exportBackup() async {
     setState(() {
@@ -26,7 +34,10 @@ class _BackupDialogState extends State<BackupDialog> {
       _statusMessage = null;
     });
 
-    final savedPath = await _backupService.exportBackupToFile();
+    final pwd = _passwordController.text.trim();
+    final savedPath = await _backupService.exportBackupToFile(
+      password: pwd.isEmpty ? null : pwd,
+    );
 
     if (mounted) {
       setState(() {
@@ -48,7 +59,10 @@ class _BackupDialogState extends State<BackupDialog> {
       _statusMessage = null;
     });
 
-    final success = await _backupService.importBackupFromFile();
+    final pwd = _passwordController.text.trim();
+    final success = await _backupService.importBackupFromFile(
+      password: pwd.isEmpty ? null : pwd,
+    );
 
     if (!mounted) return;
 
@@ -128,7 +142,29 @@ class _BackupDialogState extends State<BackupDialog> {
             ),
             const SizedBox(height: 20),
             const Divider(color: AppTheme.border, height: 1),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+
+            // Contraseña de Cifrado AES-256 (Opcional)
+            TextField(
+              controller: _passwordController,
+              obscureText: _obscurePassword,
+              decoration: InputDecoration(
+                isDense: true,
+                prefixIcon: const Icon(Icons.lock_outline, size: 20, color: AppTheme.primary),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                    size: 18,
+                    color: AppTheme.textMuted,
+                  ),
+                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                ),
+                labelText: 'Contraseña de cifrado AES-256 (Opcional)',
+                hintText: 'Dejar en blanco para copia sin cifrar',
+                hintStyle: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+              ),
+            ),
+            const SizedBox(height: 16),
 
             // Export Section
             Container(

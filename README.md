@@ -6,7 +6,7 @@
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.47+-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-3.13+-0175C2?style=for-the-badge&logo=dart&logoColor=white)](https://dart.dev)
-[![Tests](https://img.shields.io/badge/Tests-18%20Passed-10B981?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com)
+[![Tests](https://img.shields.io/badge/Tests-32%20Passed-10B981?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com)
 [![Platform](https://img.shields.io/badge/Platforms-macOS%20%7C%20Android%20TV%20%7C%20Fire%20TV%20%7C%20Windows-00E5FF?style=for-the-badge)](COMPATIBILIDAD.md)
 [![License](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)](LICENSE)
 
@@ -33,6 +33,14 @@
 * **Dual IPTV Protocol:** Full support for both **Xtream Codes API** and raw **M3U / M3U8** playlists.
 * **10-Foot TV UI with Remote Navigation:** Intelligent D-Pad navigation, smooth focus scaling (1.05x), cyan glow outlines, and automatic scrolling for Smart TVs (Xiaomi, Fire TV Stick, Google TV, Sony, TCL).
 * **Hardware-Accelerated Video Engine:** Powered by **MediaKit (libmpv)** with hardware decoding, sub-second zapping, multi-aspect ratio modes, and embedded audio/subtitle track selection.
+* **Smart Buffer Profiles & Stream Stats HUD:** Dynamic libmpv buffering (`fastZapping`, `balanced`, `highResilience`) and real-time on-screen diagnostics (bitrate, fps, codec, dropped frames, cache duration).
+* **Multiview (Split-screen 4 Channels):** Play up to 4 live channels simultaneously in a 2x2 or 2x1 grid, ideal for sports, with seamless D-Pad audio focus routing.
+* **External Subtitles & Advanced Dual Audio:** Search subtitles via OpenSubtitles REST API or load local `.srt`/`.vtt` files, complete with audio flags and Dolby Atmos / 5.1 Surround track badges.
+* **Parental Control & Kids Mode:** Protect adult categories (+18 / XXX) and app settings with a salted SHA-256 PIN and 10-foot TV D-Pad virtual numpad.
+* **Traditional EPG Timeline Grid & Broadcast Reminders:** Cable/satellite grid view (30-min slots, AHORA line) and reminder alerts with instant "VER AHORA" tune-in banner.
+* **Home Hub ("Inicio" Screen):** Netflix/Plex landing screen with Continue Watching progress bars, Favorite Channels with live EPG now playing, upcoming broadcast reminders, and curated catalog rows.
+* **Voice Search for Smart TV:** Microphone button in search bars with animated pulsing mic dialog and fast-action query chips.
+* **Encrypted Backups (AES-256):** Password-protected JSON backup export/import with AES-256 GCM encryption.
 * **Smart Offline Downloads & Live PVR:**
   * **Live TV Recording:** Capture live streams into playable MPEG-TS (`.ts`) files in background.
   * **Resumable HTTP Range VOD Downloads:** Pauses and resumes seamlessly (`206 Partial Content`) without restarting from byte zero on connection drops.
@@ -41,7 +49,7 @@
 * **XMLTV / EPG Program Guide:** High-speed XMLTV parser supporting `.xml` and compressed `.xml.gz` formats with persistent disk cache.
 * **LAN Stream Relay Server:** Embedded local HTTP server on port `8088` to re-stream current playback across other devices on the same local network without extra IPTV connections.
 * **TheMovieDatabase (TMDB) Integration:** Automatic movie/series enrichment with plot synopses, community ratings, release dates, and high-definition posters.
-* **Local Privacy First:** Zero telemetry; all server credentials, playlists, and watch history stay strictly local on device.
+* **Local Privacy First & Hardware Encryption:** Zero telemetry; Xtream passwords secured with `flutter_secure_storage` (Keychain/Keystore) and strict anti-SSRF protections.
 
 ---
 
@@ -54,6 +62,7 @@ graph TD
     Core --> MK[🎥 MediaKit libmpv Engine]
     Core --> Net[🌐 Network & HTTP Range Dio]
     Core --> Cache[💾 Persistent Local Cache<br/>SharedPreferences & Documents]
+    Core --> Sec[🔐 Secure Hardware Storage & Anti-SSRF]
     Core --> LAN[📡 Embedded LAN Stream Server]
 ```
 
@@ -76,6 +85,7 @@ IPTV Play is optimized for both desktop mice and armchair remote control interac
 
 * **Focus Glow (`TvFocusable`):** Selected items expand smoothly and glow with high-contrast cyan highlight.
 * **Remote Shortcuts:** Direct response to `Select`, `Enter`, `Play`, `Pause`, `FastForward`, `Rewind`, and `Back`.
+* **Virtual Numpad:** Custom on-screen PIN entry for remotes without numerical buttons.
 
 ---
 
@@ -91,6 +101,10 @@ flutter test
 * ✅ **M3U Parser Service (`test/m3u_parser_test.dart`):** Real regex parsing of `#EXTINF`, live channel categorization, VOD file extension detection (`.mp4`, `.mkv`), and series detection.
 * ✅ **TV Focusable Widget (`test/tv_focusable_test.dart`):** Simulates hardware D-Pad key events (`LogicalKeyboardKey.select`, `enter`, `space`), autofocus activation, and dynamic focus styling.
 * ✅ **User Activity & Persistence (`test/user_activity_test.dart`):** Tests reactive favorite toggling, recents stack management (LIFO ordering), and continue watching playback progress persistence.
+* ✅ **Security & Anti-SSRF (`test/security_service_test.dart`):** Validates URL scheme constraints, loopback address blocking, and secure credential storage migration.
+* ✅ **Parental Control (`test/parental_service_test.dart`):** Verifies SHA-256 salt PIN hashing, adult category filter heuristics, and session locking.
+* ✅ **Broadcast Reminders (`test/reminder_service_test.dart`):** Tests reminder scheduling, ticker alerts, and channel tuning.
+* ✅ **Encrypted Backups (`test/backup_encryption_test.dart`):** Verifies AES-256 encryption and decryption of JSON profile data.
 * ✅ **Domain Models (`test/models_test.dart`):** Validates Xtream JSON conversions, time range formatting, download speed math, and EPG airing state calculations.
 
 ---
