@@ -153,4 +153,5 @@ lib/
 ## 📚 Documentation
 * 📱 **[Compatibility Guide (COMPATIBILITY.md)](COMPATIBILITY.md):** Supported devices and TV OS matrix.
 * 📖 **[User Manual (USER_MANUAL.md)](USER_MANUAL.md):** 5-step quick onboarding manual.
+* 🤖 **[Agent Guidelines (AGENTS_EN.md)](AGENTS_EN.md):** Architecture and engineering standards.
 * 🇪🇸 **[Spanish Documentation (README_ES.md)](README_ES.md):** Documentación completa en español.

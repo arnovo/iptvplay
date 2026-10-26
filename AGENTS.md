@@ -95,8 +95,12 @@ LogService.instance.error(
 Cualquier cambio de características, plataformas soportadas o flujos de trabajo debe reflejarse en:
 - [README.md](file:///Users/alejandrorodriguez/APPs/rea/iptvexp/README.md) (versión en inglés)
 - [README_ES.md](file:///Users/alejandrorodriguez/APPs/rea/iptvexp/README_ES.md) (versión en español)
-- [COMPATIBILIDAD.md](file:///Users/alejandrorodriguez/APPs/rea/iptvexp/COMPATIBILIDAD.md) (matriz de soporte de hardware)
-- [MANUAL_USUARIO.md](file:///Users/alejandrorodriguez/APPs/rea/iptvexp/MANUAL_USUARIO.md) (guía paso a paso de uso)
+- [COMPATIBILITY.md](file:///Users/alejandrorodriguez/APPs/rea/iptvexp/COMPATIBILITY.md) (matriz de soporte en inglés)
+- [COMPATIBILIDAD.md](file:///Users/alejandrorodriguez/APPs/rea/iptvexp/COMPATIBILIDAD.md) (matriz de soporte en español)
+- [USER_MANUAL.md](file:///Users/alejandrorodriguez/APPs/rea/iptvexp/USER_MANUAL.md) (manual de usuario en inglés)
+- [MANUAL_USUARIO.md](file:///Users/alejandrorodriguez/APPs/rea/iptvexp/MANUAL_USUARIO.md) (manual de usuario en español)
+- [AGENTS_EN.md](file:///Users/alejandrorodriguez/APPs/rea/iptvexp/AGENTS_EN.md) (guía de desarrollo en inglés)
+- [AGENTS.md](file:///Users/alejandrorodriguez/APPs/rea/iptvexp/AGENTS.md) (guía de desarrollo en español)
 
 ---
 

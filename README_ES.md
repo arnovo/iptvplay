@@ -69,5 +69,6 @@
 ---
 
 ## 🛠️ Documentos de Referencia
-- 📱 [Guía de Compatibilidad (Smart TVs, Fire TV, PC, Mac)](COMPATIBILIDAD.md)
-- 📖 [Manual de Usuario Sencillo](MANUAL_USUARIO.md)
+- 📱 [Guía de Compatibilidad](COMPATIBILIDAD.md) • [English Version](COMPATIBILITY.md)
+- 📖 [Manual de Usuario](MANUAL_USUARIO.md) • [English Version](USER_MANUAL.md)
+- 🤖 [Guía de Desarrollo para Agentes](AGENTS.md) • [English Version](AGENTS_EN.md)
